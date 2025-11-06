@@ -23,4 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+# public files
+/public/uploads/
+# ignore everything inside uploads
+public/uploads/*
+# keep a .gitkeep so the folder exists in the repo if desired
+!/public/uploads/.gitkeep
 
