@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Danh sách người dùng</title>
+</head>
+
+<body>
+    <h2>Danh sách người dùng</h2>
+    <a href="/users/add">➕ Thêm người dùng mới</a>
+    <table border="1" cellspacing="0" cellpadding="5">
+        <thead>
+            <tr>
+                <th>Tên</th>
+                <th>Email</th>
+                <th>Địa chỉ</th>
+                <th>Giới tính</th>
+                <th>Hành động</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if (users.length===0) { %>
+                <tr>
+                    <td colspan="5">Chưa có người dùng nào</td>
+                </tr>
+                <% } else { %>
+                    <% users.forEach(user=> { %>
+                        <tr>
+                            <td>
+                                <%= user.name %>
+                            </td>
+                            <td>
+                                <%= user.email %>
+                            </td>
+                            <td>
+                                <%= user.address %>
+                            </td>
+                            <td>
+                                <%= user.gender %>
+                            </td>
+                            <td>
+                                <a href="/users/edit/<%= user._id %>">✏️ Sửa</a> |
+                                <a href="/users/delete/<%= user._id %>"
+                                    onclick="return confirm('Xóa người dùng này?')">🗑️ Xóa</a>
+                            </td>
+                        </tr>
+                        <% }) %>
+                            <% } %>
+        </tbody>
+    </table>
+</body>
+
+</html>

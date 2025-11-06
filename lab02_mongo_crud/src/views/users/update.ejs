@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Cập nhật thông tin người dùng</title>
+</head>
+
+<body>
+    <h2>Cập nhật người dùng</h2>
+    <form method="POST" action="/users/update/<%= user._id %>">
+        <label>Tên:</label>
+        <input type="text" name="name" value="<%= user.name %>" required /><br />
+        <label>Email:</label>
+        <input type="email" name="email" value="<%= user.email %>" required /><br />
+        <label>Địa chỉ:</label>
+        <input type="text" name="address" value="<%= user.address %>" /><br />
+        <label>Giới tính:</label>
+        <select name="gender">
+            <option value="Male" <%=user.gender==="Male" ? "selected" : "" %>>Nam</option>
+            <option value="Female" <%=user.gender==="Female" ? "selected" : "" %>>Nữ</option>
+        </select><br />
+        <button type="submit">Cập nhật</button>
+    </form>
+    <br />
+    <a href="/users">⬅️ Quay lại danh sách</a>
+</body>
+
+</html>
