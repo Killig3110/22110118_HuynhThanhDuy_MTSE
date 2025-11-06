@@ -4,10 +4,12 @@ const multer = require("multer");
 const path = require("path");
 const userController = require("../controllers/user.controller");
 
-// Configure multer storage to public/uploads
+// Configure multer storage using UPLOAD_DIR from environment (resolved relative to project root)
+const envUploadDir = process.env.UPLOAD_DIR || 'public/uploads';
+const resolvedUploadDir = path.isAbsolute(envUploadDir) ? envUploadDir : path.join(process.cwd(), envUploadDir);
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, '../../public/uploads'));
+        cb(null, resolvedUploadDir);
     },
     filename: function (req, file, cb) {
         const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
