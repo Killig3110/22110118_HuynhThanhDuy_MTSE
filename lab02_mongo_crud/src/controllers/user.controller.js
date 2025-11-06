@@ -31,8 +31,9 @@ exports.createUser = async (req, res) => {
         const data = { ...req.body };
         // If an image file was uploaded, store its public path
         if (req.file) {
-            // public folder is served statically, save path relative to /public
-            data.image = `/uploads/${req.file.filename}`;
+            // Use UPLOAD_URL from env so path is configurable
+            const uploadUrl = process.env.UPLOAD_URL || '/uploads';
+            data.image = `${uploadUrl}/${req.file.filename}`;
         }
         await userService.createNewUser(data);
         res.redirect("/users");
@@ -61,7 +62,8 @@ exports.updateUser = async (req, res) => {
     try {
         const data = { id: req.params.id, ...req.body };
         if (req.file) {
-            data.image = `/uploads/${req.file.filename}`;
+            const uploadUrl = process.env.UPLOAD_URL || '/uploads';
+            data.image = `${uploadUrl}/${req.file.filename}`;
         }
         await userService.updateUser(data);
         res.redirect("/users");
