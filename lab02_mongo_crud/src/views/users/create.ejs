@@ -62,24 +62,28 @@
                                 <label class="form-label">Chức vụ</label>
                                 <select class="form-select" name="positionId">
                                     <% if (positions && positions.length) { %>
-                                        <% positions.forEach(p => { %>
-                                            <option value="<%= p.key %>"><%= p.name %></option>
-                                        <% }) %>
-                                    <% } else { %>
-                                        <option value="P0">None</option>
-                                    <% } %>
+                                        <% positions.forEach(p=> { %>
+                                            <option value="<%= p.key %>">
+                                                <%= p.name %>
+                                            </option>
+                                            <% }) %>
+                                                <% } else { %>
+                                                    <option value="P0">None</option>
+                                                    <% } %>
                                 </select>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Quyền</label>
                                 <select class="form-select" name="roleId">
                                     <% if (roles && roles.length) { %>
-                                        <% roles.forEach(r => { %>
-                                            <option value="<%= r.key %>"><%= r.name %></option>
-                                        <% }) %>
-                                    <% } else { %>
-                                        <option value="R2">User</option>
-                                    <% } %>
+                                        <% roles.forEach(r=> { %>
+                                            <option value="<%= r.key %>">
+                                                <%= r.name %>
+                                            </option>
+                                            <% }) %>
+                                                <% } else { %>
+                                                    <option value="R2">User</option>
+                                                    <% } %>
                                 </select>
                             </div>
                             <div class="mb-3">

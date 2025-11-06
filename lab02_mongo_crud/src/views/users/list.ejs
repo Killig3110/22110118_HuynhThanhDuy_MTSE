@@ -48,16 +48,29 @@
                                         <tr>
                                             <td>
                                                 <% if (user.image) { %>
-                                                    <img src="<%= user.image %>" alt="avatar" style="width:48px;height:48px;object-fit:cover;border-radius:4px;" />
-                                                <% } else { %>
-                                                    <div style="width:48px;height:48px;background:#f1f1f1;border-radius:4px;"></div>
-                                                <% } %>
+                                                    <img src="<%= user.image %>" alt="avatar"
+                                                        style="width:48px;height:48px;object-fit:cover;border-radius:4px;" />
+                                                    <% } else { %>
+                                                        <div
+                                                            style="width:48px;height:48px;background:#f1f1f1;border-radius:4px;">
+                                                        </div>
+                                                        <% } %>
                                             </td>
-                                            <td><%= (user.firstName || '') + ' ' + (user.lastName || '') %></td>
-                                            <td><%= user.email %></td>
-                                            <td><%= user.phoneNumber || '-' %></td>
-                                            <td><%= user.address || '-' %></td>
-                                            <td><%= user.gender ? 'Nam' : 'Nữ' %></td>
+                                            <td>
+                                                <%= (user.firstName || '' ) + ' ' + (user.lastName || '' ) %>
+                                            </td>
+                                            <td>
+                                                <%= user.email %>
+                                            </td>
+                                            <td>
+                                                <%= user.phoneNumber || '-' %>
+                                            </td>
+                                            <td>
+                                                <%= user.address || '-' %>
+                                            </td>
+                                            <td>
+                                                <%= user.gender ? 'Nam' : 'Nữ' %>
+                                            </td>
                                             <td class="text-end">
                                                 <a class="btn btn-sm btn-outline-primary me-2"
                                                     href="/users/edit/<%= user._id %>">Sửa</a>
