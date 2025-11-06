@@ -9,30 +9,21 @@
 </head>
 
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
-            <a class="navbar-brand" href="/">My Users App</a>
-            <div>
-                <a class="btn btn-outline-light" href="/users">Quản lý người dùng</a>
+    <%- include('partials/header', { actionLink: '/users' , actionText: 'Quản lý người dùng' }) %>
+
+        <main class="container py-5">
+            <div class="row justify-content-center">
+                <div class="col-md-8 text-center">
+                    <h1 class="display-5">Chào mừng đến với ứng dụng CRUD</h1>
+                    <p class="lead">Thử tạo, sửa, xóa người dùng. Giao diện đơn giản với Bootstrap.</p>
+                    <a href="/users" class="btn btn-primary btn-lg">Xem danh sách người dùng</a>
+                </div>
             </div>
-        </div>
-    </nav>
+        </main>
 
-    <main class="container py-5">
-        <div class="row justify-content-center">
-            <div class="col-md-8 text-center">
-                <h1 class="display-5">Chào mừng đến với ứng dụng CRUD</h1>
-                <p class="lead">Thử tạo, sửa, xóa người dùng. Giao diện đơn giản với Bootstrap.</p>
-                <a href="/users" class="btn btn-primary btn-lg">Xem danh sách người dùng</a>
-            </div>
-        </div>
-    </main>
+        <%- include('partials/footer') %>
 
-    <footer class="bg-light py-3 mt-auto">
-        <div class="container text-center text-muted">© 2025 - Lab Mongo CRUD</div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+            <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
