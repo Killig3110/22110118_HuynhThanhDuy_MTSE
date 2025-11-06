@@ -24,25 +24,67 @@
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h3 class="card-title mb-3">Thêm người dùng mới</h3>
-                        <form method="POST" action="/users/add">
-                            <div class="mb-3">
-                                <label class="form-label">Tên</label>
-                                <input class="form-control" type="text" name="name" required />
+                        <form method="POST" action="/users/add" enctype="multipart/form-data">
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Họ</label>
+                                    <input class="form-control" type="text" name="firstName" required />
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Tên</label>
+                                    <input class="form-control" type="text" name="lastName" required />
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label">Email</label>
                                 <input class="form-control" type="email" name="email" required />
                             </div>
                             <div class="mb-3">
+                                <label class="form-label">Mật khẩu</label>
+                                <input class="form-control" type="password" name="password" required />
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Địa chỉ</label>
                                 <input class="form-control" type="text" name="address" />
                             </div>
                             <div class="mb-3">
+                                <label class="form-label">Điện thoại</label>
+                                <input class="form-control" type="text" name="phoneNumber" />
+                            </div>
+                            <div class="mb-3">
                                 <label class="form-label">Giới tính</label>
                                 <select class="form-select" name="gender">
-                                    <option value="Male">Nam</option>
-                                    <option value="Female">Nữ</option>
+                                    <option value="true">Nam</option>
+                                    <option value="false">Nữ</option>
                                 </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Chức vụ</label>
+                                <select class="form-select" name="positionId">
+                                    <% if (positions && positions.length) { %>
+                                        <% positions.forEach(p => { %>
+                                            <option value="<%= p.key %>"><%= p.name %></option>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <option value="P0">None</option>
+                                    <% } %>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Quyền</label>
+                                <select class="form-select" name="roleId">
+                                    <% if (roles && roles.length) { %>
+                                        <% roles.forEach(r => { %>
+                                            <option value="<%= r.key %>"><%= r.name %></option>
+                                        <% }) %>
+                                    <% } else { %>
+                                        <option value="R2">User</option>
+                                    <% } %>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Ảnh đại diện</label>
+                                <input class="form-control" type="file" name="image" accept="image/*" />
                             </div>
                             <div class="d-flex gap-2">
                                 <button class="btn btn-primary" type="submit">Lưu</button>
