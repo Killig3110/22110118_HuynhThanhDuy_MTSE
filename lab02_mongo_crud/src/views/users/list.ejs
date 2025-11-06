@@ -12,8 +12,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container">
             <a class="navbar-brand" href="/">My Users App</a>
-            <div>
-                <a class="btn btn-outline-light" href="/users/add">➕ Thêm người dùng</a>
+            <div class="ms-auto">
+                <a class="btn btn-outline-light" href="/users/add">Thêm người dùng</a>
             </div>
         </div>
     </nav>
@@ -56,12 +56,12 @@
                                             <td>
                                                 <%= user.gender %>
                                             </td>
-                                            <td>
+                                            <td class="text-end">
                                                 <a class="btn btn-sm btn-outline-primary me-2"
-                                                    href="/users/edit/<%= user._id %>">✏️ Sửa</a>
+                                                    href="/users/edit/<%= user._id %>">Sửa</a>
                                                 <a class="btn btn-sm btn-outline-danger"
                                                     href="/users/delete/<%= user._id %>"
-                                                    onclick="return confirm('Xóa người dùng này?')">🗑️ Xóa</a>
+                                                    onclick="return confirm('Xóa người dùng này?')">Xóa</a>
                                             </td>
                                         </tr>
                                         <% }) %>
