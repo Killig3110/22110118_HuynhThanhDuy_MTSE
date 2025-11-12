@@ -1,0 +1,12 @@
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+        <a class="navbar-brand" href="/">My Users App</a>
+        <% if (typeof actionLink !=='undefined' && actionText) { %>
+            <div class="ms-auto">
+                <a class="btn btn-outline-light" href="<%= actionLink %>">
+                    <%= actionText %>
+                </a>
+            </div>
+            <% } %>
+    </div>
+</nav>
