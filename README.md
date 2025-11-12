@@ -20,7 +20,8 @@ Mỗi thư mục tương ứng với một bài tập riêng biệt, có cấu t
 | Bài tập | Tên thư mục | Mô tả ngắn |
 |----------|--------------|------------|
 | **BT01** | `001_Intro_ExpressJS` | Làm quen với ExpressJS, tạo server cơ bản và render template EJS. |
-| **BT02** | `002_CRUD_ExpressJS_MongoDB` | Xây dựng hệ thống CRUD hoàn chỉnh (Create – Read – Update – Delete) sử dụng **ExpressJS + MongoDB (Mongoose)** thay cho MySQL. |
+| **BT02** | `002_CRUD_ExpressJS_MongoDB` | Xây dựng hệ thống CRUD hoàn chỉnh (Create – Read – Update – Delete) sử dụng **ExpressJS + MongoDB (Mongoose)**. |
+| **BT03** | `003_CRUD_ExpressTS_MongoDB` or `lab03_typescript` | Port từ BT02 sang **TypeScript**: Express + Mongoose + EJS, hỗ trợ upload ảnh, role/position models và seeder. |
 
 ---
 
@@ -28,7 +29,8 @@ Mỗi thư mục tương ứng với một bài tập riêng biệt, có cấu t
 - **Node.js / ExpressJS** – Xây dựng backend server  
 - **MongoDB / Mongoose** – Quản lý cơ sở dữ liệu NoSQL  
 - **EJS** – Template engine cho Express  
-- **dotenv, nodemon** – Cấu hình môi trường và tự động reload  
+- **TypeScript** (cho BT03) – Tăng tính an toàn kiểu cho mã nguồn  
+- **dotenv, nodemon, ts-node-dev** – Cấu hình môi trường và tự động reload  
 
 ---
 
@@ -37,7 +39,8 @@ Mỗi thư mục tương ứng với một bài tập riêng biệt, có cấu t
 /22110118_HuynhThanhDuy_03CLC_ModernSE/
 │
 ├── 001_Intro_ExpressJS/
-│── 002_CRUD_ExpressJS_MongoDB/
+├── 002_CRUD_ExpressJS_MongoDB/
+├── 003_CRUD_ExpressTS_MongoDB/ (or lab03_typescript)
 │
 └── README.md
 ```
