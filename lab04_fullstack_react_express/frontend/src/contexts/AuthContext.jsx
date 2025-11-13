@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }) => {
                     console.log('🔄 Validating token with backend...');
                     const response = await authAPI.getProfile();
                     console.log('✅ Token validation response:', response.data);
-                    
+
                     if (response.data.success) {
                         setUser(response.data.data.user);
                         console.log('👤 User authenticated successfully:', response.data.data.user.email);

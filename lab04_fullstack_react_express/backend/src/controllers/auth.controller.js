@@ -192,7 +192,7 @@ const refreshTokenEndpoint = async (req, res) => {
 
         // Verify refresh token
         const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
-        
+
         // Get user
         const user = await User.findByPk(decoded.id, {
             include: [
@@ -231,7 +231,7 @@ const logout = async (req, res) => {
     try {
         // Clear refresh token cookie
         res.clearCookie('refreshToken');
-        
+
         res.json({
             success: true,
             message: 'Logged out successfully'

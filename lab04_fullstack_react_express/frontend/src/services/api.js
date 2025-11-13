@@ -15,7 +15,7 @@ api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
         console.log('🔑 API Request:', config.method?.toUpperCase(), config.url, token ? 'Token present' : 'No token');
-        
+
         if (token) {
             // Check if token is expired (basic check - decode JWT payload)
             try {
@@ -26,7 +26,7 @@ api.interceptors.request.use(
                     now: now,
                     expired: payload.exp < now
                 });
-                
+
                 if (payload.exp < now) {
                     console.warn('⏰ Token expired, removing...');
                     Cookies.remove('token');
@@ -36,7 +36,7 @@ api.interceptors.request.use(
             } catch (e) {
                 console.warn('🚫 Invalid token format');
             }
-            
+
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;
