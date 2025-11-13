@@ -3,6 +3,8 @@ const { body, validationResult } = require('express-validator');
 const {
     register,
     login,
+    refreshTokenEndpoint,
+    logout,
     forgotPassword,
     resetPassword,
     getProfile,
@@ -63,6 +65,8 @@ const handleValidationErrors = (req, res, next) => {
 // Routes
 router.post('/register', validateRegistration, handleValidationErrors, register);
 router.post('/login', validateLogin, handleValidationErrors, login);
+router.post('/refresh-token', refreshTokenEndpoint);
+router.post('/logout', logout);
 router.post('/forgot-password', validateForgotPassword, handleValidationErrors, forgotPassword);
 router.post('/reset-password', validateResetPassword, handleValidationErrors, resetPassword);
 

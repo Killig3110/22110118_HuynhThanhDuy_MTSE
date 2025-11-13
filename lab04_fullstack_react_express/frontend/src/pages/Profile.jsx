@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -62,9 +62,35 @@ const Profile = () => {
         resolver: yupResolver(passwordSchema),
     });
 
+    // Update form when user data changes
+    useEffect(() => {
+        if (user) {
+            profileForm.reset({
+                firstName: user.firstName || '',
+                lastName: user.lastName || '',
+                phone: user.phone || '',
+                address: user.address || '',
+                dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+            });
+        }
+    }, [user, profileForm]);
+
     const onProfileSubmit = async (data) => {
+        console.log('📤 Submitting profile data:', data);
+
         const result = await updateProfile(data);
-        if (!result.success) {
+        console.log('📥 Profile update result:', result);
+
+        if (result.success) {
+            // Reset form with updated values
+            profileForm.reset({
+                firstName: user?.firstName || '',
+                lastName: user?.lastName || '',
+                phone: user?.phone || '',
+                address: user?.address || '',
+                dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+            });
+        } else {
             profileForm.setError('root', {
                 type: 'manual',
                 message: result.message || 'Profile update failed'
@@ -149,8 +175,8 @@ const Profile = () => {
                             <button
                                 onClick={() => setActiveTab('profile')}
                                 className={`${activeTab === 'profile'
-                                        ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
                             >
                                 Profile Information
@@ -158,8 +184,8 @@ const Profile = () => {
                             <button
                                 onClick={() => setActiveTab('password')}
                                 className={`${activeTab === 'password'
-                                        ? 'border-blue-500 text-blue-600'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                                    ? 'border-blue-500 text-blue-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                                     } whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm`}
                             >
                                 Change Password
