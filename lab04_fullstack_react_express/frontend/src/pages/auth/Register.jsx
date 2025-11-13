@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
-import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Calendar, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Calendar, UserPlus, Briefcase, Shield } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
+import { userAPI } from '../../services/api';
 
 const schema = yup.object({
     firstName: yup
@@ -35,13 +36,44 @@ const schema = yup.object({
         .optional(),
     address: yup.string().optional(),
     dateOfBirth: yup.date().max(new Date(), 'Date of birth cannot be in the future').optional(),
+    roleId: yup.number().optional(),
+    positionId: yup.number().optional(),
 });
 
 const Register = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [roles, setRoles] = useState([]);
+    const [positions, setPositions] = useState([]);
     const { register: registerUser, isLoading } = useAuth();
     const navigate = useNavigate();
+
+    useEffect(() => {
+        fetchRoles();
+        fetchPositions();
+    }, []);
+
+    const fetchRoles = async () => {
+        try {
+            const response = await userAPI.getRoles();
+            if (response.data.success) {
+                setRoles(response.data.data.roles);
+            }
+        } catch (error) {
+            console.error('Error fetching roles:', error);
+        }
+    };
+
+    const fetchPositions = async () => {
+        try {
+            const response = await userAPI.getPositions();
+            if (response.data.success) {
+                setPositions(response.data.data.positions);
+            }
+        } catch (error) {
+            console.error('Error fetching positions:', error);
+        }
+    };
 
     const {
         register,
@@ -323,6 +355,68 @@ const Register = () => {
                                 </div>
                                 {errors.address && (
                                     <p className="mt-1 text-sm text-red-600">{errors.address.message}</p>
+                                )}
+                            </div>
+
+                            {/* Role */}
+                            <div>
+                                <label htmlFor="roleId" className="block text-sm font-medium text-gray-700">
+                                    Role (Optional)
+                                </label>
+                                <div className="mt-1 relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Shield className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <select
+                                        {...register('roleId')}
+                                        className={`
+                      appearance-none relative block w-full px-3 py-2 pl-10 border 
+                      ${errors.roleId ? 'border-red-300' : 'border-gray-300'}
+                      placeholder-gray-500 text-gray-900 rounded-md focus:outline-none 
+                      focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm
+                    `}
+                                    >
+                                        <option value="">Select a role</option>
+                                        {roles.map((role) => (
+                                            <option key={role.id} value={role.id}>
+                                                {role.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {errors.roleId && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.roleId.message}</p>
+                                )}
+                            </div>
+
+                            {/* Position */}
+                            <div>
+                                <label htmlFor="positionId" className="block text-sm font-medium text-gray-700">
+                                    Position (Optional)
+                                </label>
+                                <div className="mt-1 relative">
+                                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <Briefcase className="h-5 w-5 text-gray-400" />
+                                    </div>
+                                    <select
+                                        {...register('positionId')}
+                                        className={`
+                      appearance-none relative block w-full px-3 py-2 pl-10 border 
+                      ${errors.positionId ? 'border-red-300' : 'border-gray-300'}
+                      placeholder-gray-500 text-gray-900 rounded-md focus:outline-none 
+                      focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm
+                    `}
+                                    >
+                                        <option value="">Select a position</option>
+                                        {positions.map((position) => (
+                                            <option key={position.id} value={position.id}>
+                                                {position.title} - {position.department}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {errors.positionId && (
+                                    <p className="mt-1 text-sm text-red-600">{errors.positionId.message}</p>
                                 )}
                             </div>
                         </div>

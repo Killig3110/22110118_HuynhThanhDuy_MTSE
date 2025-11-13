@@ -403,12 +403,12 @@ const updateProfile = async (req, res) => {
             });
         }
 
-        // Update user fields
-        if (firstName) user.firstName = firstName;
-        if (lastName) user.lastName = lastName;
-        if (phone) user.phone = phone;
-        if (address) user.address = address;
-        if (dateOfBirth) user.dateOfBirth = dateOfBirth;
+        // Update user fields - allow empty strings but not undefined
+        if (firstName !== undefined) user.firstName = firstName;
+        if (lastName !== undefined) user.lastName = lastName;
+        if (phone !== undefined) user.phone = phone;
+        if (address !== undefined) user.address = address;
+        if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
 
         await user.save();
 
