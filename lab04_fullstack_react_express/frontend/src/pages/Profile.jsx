@@ -4,6 +4,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { User, Mail, Phone, MapPin, Calendar, Camera, Lock, Save, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import AvatarUpload from '../components/AvatarUpload';
 
 const profileSchema = yup.object({
     firstName: yup
@@ -39,11 +40,51 @@ const passwordSchema = yup.object({
 });
 
 const Profile = () => {
-    const { user, updateProfile, changePassword } = useAuth();
+    const { user, updateProfile, changePassword, setUser } = useAuth();
     const [activeTab, setActiveTab] = useState('profile');
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // Debug user data
+    console.log('👤 Profile component user data:', {
+        user,
+        avatar: user?.avatar,
+        localStorage: localStorage.getItem('user')
+    });
+
+    // Handle avatar update
+    const handleAvatarUpdate = async (newAvatarUrl) => {
+        // Update user state immediately for UI feedback
+        setUser(prevUser => ({
+            ...prevUser,
+            avatar: newAvatarUrl
+        }));
+
+        // Also update localStorage for persistence
+        try {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // Fetch fresh user data to ensure sync
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        setUser(data.data.user);
+                        // Update localStorage too
+                        localStorage.setItem('user', JSON.stringify(data.data.user));
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('Error refreshing user data:', error);
+        }
+    };
 
     // Profile form
     const profileForm = useForm({
@@ -74,6 +115,37 @@ const Profile = () => {
             });
         }
     }, [user, profileForm]);
+
+    // Force reload user data on component mount if avatar is missing
+    useEffect(() => {
+        const reloadUserData = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/profile`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.success && data.data.user.avatar) {
+                            console.log('🔄 Reloaded user with avatar:', data.data.user.avatar);
+                            setUser(data.data.user);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error reloading user data:', error);
+            }
+        };
+
+        // Only reload if user exists but no avatar
+        if (user && !user.avatar) {
+            reloadUserData();
+        }
+    }, [user, setUser]);
 
     const onProfileSubmit = async (data) => {
         console.log('📤 Submitting profile data:', data);
@@ -137,14 +209,10 @@ const Profile = () => {
                     <div className="bg-white shadow rounded-lg p-6">
                         <div className="flex items-center space-x-6">
                             <div className="flex-shrink-0">
-                                <div className="h-20 w-20 bg-blue-500 rounded-full flex items-center justify-center relative group cursor-pointer">
-                                    <span className="text-2xl font-bold text-white">
-                                        {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                                    </span>
-                                    <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <Camera className="h-6 w-6 text-white" />
-                                    </div>
-                                </div>
+                                <AvatarUpload
+                                    currentAvatar={user?.avatar}
+                                    onAvatarUpdate={handleAvatarUpdate}
+                                />
                             </div>
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">

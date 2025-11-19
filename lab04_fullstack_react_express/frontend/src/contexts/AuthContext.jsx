@@ -282,7 +282,8 @@ export const AuthProvider = ({ children }) => {
         resetPassword,
         hasRole,
         isAdmin,
-        isManager
+        isManager,
+        setUser
     };
 
     return (

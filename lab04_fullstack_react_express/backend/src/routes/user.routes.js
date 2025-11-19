@@ -8,7 +8,9 @@ const {
     deleteUser,
     toggleUserStatus,
     getRoles,
-    getPositions
+    getPositions,
+    uploadAvatar,
+    deleteAvatar
 } = require('../controllers/user.controller');
 const { authMiddleware, adminMiddleware, managerMiddleware } = require('../middleware/auth');
 const { handleUploadError } = require('../middleware/upload');
@@ -65,5 +67,9 @@ router.post('/', adminMiddleware, handleUploadError, validateUser, handleValidat
 router.put('/:id', adminMiddleware, handleUploadError, validateUserUpdate, handleValidationErrors, updateUser);
 router.delete('/:id', adminMiddleware, deleteUser);
 router.patch('/:id/toggle-status', adminMiddleware, toggleUserStatus);
+
+// Avatar routes - user can manage their own avatar
+router.post('/avatar/upload', handleUploadError, uploadAvatar);
+router.delete('/avatar', deleteAvatar);
 
 module.exports = router;
