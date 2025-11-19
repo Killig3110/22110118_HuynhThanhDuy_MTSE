@@ -18,7 +18,7 @@ const BuildingList = () => {
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            
+
             const queryParams = new URLSearchParams({
                 page: loadMore ? filters.page + 1 : filters.page,
                 limit: filters.limit,
@@ -91,7 +91,7 @@ const BuildingList = () => {
                 <div className="px-6 py-4 border-b border-gray-200">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                         <h1 className="text-2xl font-bold text-gray-900">Building Management</h1>
-                        
+
                         {/* Search Form */}
                         <form onSubmit={handleSearchSubmit} className="mt-4 sm:mt-0">
                             <div className="flex">
@@ -119,26 +119,24 @@ const BuildingList = () => {
                     <div className="mb-4 flex flex-wrap gap-2">
                         <button
                             onClick={() => handleSort('buildingCode')}
-                            className={`px-3 py-1 rounded text-sm ${
-                                filters.sortBy === 'buildingCode' 
-                                    ? 'bg-blue-100 text-blue-800' 
+                            className={`px-3 py-1 rounded text-sm ${filters.sortBy === 'buildingCode'
+                                    ? 'bg-blue-100 text-blue-800'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
+                                }`}
                         >
-                            Building Code 
+                            Building Code
                             {filters.sortBy === 'buildingCode' && (
                                 filters.sortOrder === 'ASC' ? ' ↑' : ' ↓'
                             )}
                         </button>
                         <button
                             onClick={() => handleSort('name')}
-                            className={`px-3 py-1 rounded text-sm ${
-                                filters.sortBy === 'name' 
-                                    ? 'bg-blue-100 text-blue-800' 
+                            className={`px-3 py-1 rounded text-sm ${filters.sortBy === 'name'
+                                    ? 'bg-blue-100 text-blue-800'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                            }`}
+                                }`}
                         >
-                            Name 
+                            Name
                             {filters.sortBy === 'name' && (
                                 filters.sortOrder === 'ASC' ? ' ↑' : ' ↓'
                             )}
@@ -194,16 +192,15 @@ const BuildingCard = ({ building }) => {
                 <h3 className="text-lg font-semibold text-gray-900">{building.name}</h3>
                 <span className="text-sm font-medium text-blue-600">{building.buildingCode}</span>
             </div>
-            
+
             <p className="text-gray-600 text-sm mb-2">{building.address}</p>
-            
+
             <div className="flex justify-between items-center text-sm text-gray-500 mb-3">
                 <span>Floors: {building.totalFloors}</span>
-                <span className={`px-2 py-1 rounded text-xs ${
-                    building.status === 'active' 
-                        ? 'bg-green-100 text-green-800' 
+                <span className={`px-2 py-1 rounded text-xs ${building.status === 'active'
+                        ? 'bg-green-100 text-green-800'
                         : 'bg-gray-100 text-gray-600'
-                }`}>
+                    }`}>
                     {building.status}
                 </span>
             </div>

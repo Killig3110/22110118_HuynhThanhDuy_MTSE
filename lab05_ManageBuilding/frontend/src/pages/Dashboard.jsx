@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart, Users, UserPlus, Activity, TrendingUp, Calendar, Clock, Award } from 'lucide-react';
+import { BarChart, Users, Building2, Home, TrendingUp, Calendar, Clock, Award } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
@@ -9,33 +9,33 @@ const Dashboard = () => {
     const stats = [
         {
             id: 1,
-            name: 'Total Users',
-            value: '2,651',
-            change: '+4.75%',
+            name: 'Total Buildings',
+            value: '10',
+            change: '+0%',
+            changeType: 'neutral',
+            icon: Building2,
+        },
+        {
+            id: 2,
+            name: 'Total Apartments',
+            value: '1,600',
+            change: '+0%',
+            changeType: 'neutral',
+            icon: Home,
+        },
+        {
+            id: 3,
+            name: 'Occupied Apartments',
+            value: '24',
+            change: '+1.5%',
             changeType: 'increase',
             icon: Users,
         },
         {
-            id: 2,
-            name: 'Active Users',
-            value: '2,345',
-            change: '+54.02%',
-            changeType: 'increase',
-            icon: Activity,
-        },
-        {
-            id: 3,
-            name: 'New Registrations',
-            value: '145',
-            change: '-1.39%',
-            changeType: 'decrease',
-            icon: UserPlus,
-        },
-        {
             id: 4,
-            name: 'Growth Rate',
-            value: '12.5%',
-            change: '+2.1%',
+            name: 'Occupancy Rate',
+            value: '1.5%',
+            change: '+0.1%',
             changeType: 'increase',
             icon: TrendingUp,
         },
@@ -44,35 +44,35 @@ const Dashboard = () => {
     const recentActivities = [
         {
             id: 1,
-            type: 'user_registered',
-            message: 'New user John Doe registered',
-            time: '2 minutes ago',
-            icon: UserPlus,
+            type: 'new_resident',
+            message: 'New resident moved to apartment S.01-0102',
+            time: '2 hours ago',
+            icon: Users,
             color: 'text-green-600',
         },
         {
             id: 2,
-            type: 'user_login',
-            message: 'Alice Smith logged in',
-            time: '5 minutes ago',
-            icon: Activity,
-            color: 'text-blue-600',
-        },
-        {
-            id: 3,
-            type: 'user_updated',
-            message: 'Bob Johnson updated profile',
-            time: '10 minutes ago',
-            icon: Users,
+            type: 'maintenance_request',
+            message: 'Maintenance requested for S.01 elevator',
+            time: '4 hours ago',
+            icon: Clock,
             color: 'text-yellow-600',
         },
         {
-            id: 4,
-            type: 'user_login',
-            message: 'Manager logged in',
-            time: '15 minutes ago',
-            icon: Activity,
+            id: 3,
+            type: 'payment_received',
+            message: 'Rent payment received from apt S.01-0101',
+            time: '1 day ago',
+            icon: TrendingUp,
             color: 'text-blue-600',
+        },
+        {
+            id: 4,
+            type: 'visitor_registered',
+            message: 'Visitor registered for apartment S.01-0103',
+            time: '2 days ago',
+            icon: Users,
+            color: 'text-purple-600',
         },
     ];
 
@@ -163,7 +163,7 @@ const Dashboard = () => {
                 </div>
 
                 {/* Stats Grid */}
-                {(user?.role?.name === 'Admin' || user?.role?.name === 'Manager') && (
+                {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (
                     <div className="px-4 sm:px-0 mb-8">
                         <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Overview</h3>
                         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
@@ -198,28 +198,28 @@ const Dashboard = () => {
                     <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         <Link
-                            to="/profile"
+                            to="/buildings"
                             className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
                         >
                             <div>
                                 <span className="rounded-lg inline-flex p-3 bg-blue-50 text-blue-600 ring-4 ring-white">
-                                    <Users className="h-6 w-6" aria-hidden="true" />
+                                    <Building2 className="h-6 w-6" aria-hidden="true" />
                                 </span>
                             </div>
                             <div className="mt-4">
                                 <h3 className="text-lg font-medium text-gray-900">
                                     <span className="absolute inset-0" aria-hidden="true" />
-                                    View Profile
+                                    View Buildings
                                 </h3>
                                 <p className="mt-2 text-sm text-gray-500">
-                                    Update your personal information and account settings.
+                                    Browse all buildings and apartment information.
                                 </p>
                             </div>
                         </Link>
 
-                        {user?.role?.name === 'Manager' || user?.role?.name === 'Admin' ? (
+                        {user?.role?.name === 'admin' || user?.role?.name === 'building_manager' ? (
                             <Link
-                                to="/users"
+                                to="/residents"
                                 className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
                             >
                                 <div>
@@ -230,57 +230,61 @@ const Dashboard = () => {
                                 <div className="mt-4">
                                     <h3 className="text-lg font-medium text-gray-900">
                                         <span className="absolute inset-0" aria-hidden="true" />
-                                        Manage Users
+                                        Manage Residents
                                     </h3>
                                     <p className="mt-2 text-sm text-gray-500">
-                                        View and manage user accounts and permissions.
+                                        View and manage resident information and apartments.
                                     </p>
                                 </div>
                             </Link>
                         ) : null}
 
-                        {user?.role?.name === 'Admin' ? (
+                        {user?.role?.name === 'admin' ? (
                             <Link
-                                to="/users/create"
+                                to="/management"
                                 className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
                             >
                                 <div>
                                     <span className="rounded-lg inline-flex p-3 bg-yellow-50 text-yellow-600 ring-4 ring-white">
-                                        <UserPlus className="h-6 w-6" aria-hidden="true" />
+                                        <Award className="h-6 w-6" aria-hidden="true" />
                                     </span>
                                 </div>
                                 <div className="mt-4">
                                     <h3 className="text-lg font-medium text-gray-900">
                                         <span className="absolute inset-0" aria-hidden="true" />
-                                        Create User
+                                        System Management
                                     </h3>
                                     <p className="mt-2 text-sm text-gray-500">
-                                        Add new users to the system with roles and permissions.
+                                        Manage users, roles, and system configurations.
                                     </p>
                                 </div>
                             </Link>
                         ) : null}
 
-                        <div className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow">
+                        <Link
+                            to="/profile"
+                            className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
+                        >
                             <div>
                                 <span className="rounded-lg inline-flex p-3 bg-purple-50 text-purple-600 ring-4 ring-white">
-                                    <BarChart className="h-6 w-6" aria-hidden="true" />
+                                    <Users className="h-6 w-6" aria-hidden="true" />
                                 </span>
                             </div>
                             <div className="mt-4">
                                 <h3 className="text-lg font-medium text-gray-900">
-                                    View Reports
+                                    <span className="absolute inset-0" aria-hidden="true" />
+                                    My Profile
                                 </h3>
                                 <p className="mt-2 text-sm text-gray-500">
-                                    Access detailed analytics and system reports.
+                                    Update your personal information and account settings.
                                 </p>
                             </div>
-                        </div>
+                        </Link>
                     </div>
                 </div>
 
                 {/* Recent Activities */}
-                {(user?.role?.name === 'Admin' || user?.role?.name === 'Manager') && (
+                {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (
                     <div className="px-4 sm:px-0">
                         <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Recent Activities</h3>
                         <div className="bg-white shadow rounded-lg">

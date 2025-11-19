@@ -77,7 +77,7 @@ const validateDateOfBirth = body('dateOfBirth')
         const birthDate = new Date(value);
         const today = new Date();
         const age = today.getFullYear() - birthDate.getFullYear();
-        
+
         if (age < 18 || age > 120) {
             throw new Error('Age must be between 18 and 120 years');
         }
@@ -169,13 +169,59 @@ const validateProfileUpdate = [
     validateName('lastName'),
     validatePhone,
     validateDateOfBirth,
-    validateGender,
-    validateEmergencyContact,
     body('address')
         .optional()
         .trim()
         .isLength({ max: 200 })
         .withMessage('Address must not exceed 200 characters'),
+    body('emergencyContact')
+        .optional()
+        .isMobilePhone('vi-VN')
+        .withMessage('Emergency contact must be a valid Vietnamese phone number'),
+    body('apartmentNumber')
+        .optional()
+        .isLength({ max: 10 })
+        .withMessage('Apartment number must not exceed 10 characters'),
+    body('badgeNumber')
+        .optional()
+        .isLength({ max: 20 })
+        .withMessage('Badge number must not exceed 20 characters'),
+    body('licenseNumber')
+        .optional()
+        .isLength({ max: 50 })
+        .withMessage('License number must not exceed 50 characters'),
+    body('specialization')
+        .optional()
+        .isLength({ max: 100 })
+        .withMessage('Specialization must not exceed 100 characters'),
+    body('workSchedule')
+        .optional()
+        .isLength({ max: 500 })
+        .withMessage('Work schedule must not exceed 500 characters'),
+    body('shiftSchedule')
+        .optional()
+        .isLength({ max: 500 })
+        .withMessage('Shift schedule must not exceed 500 characters'),
+    body('certifications')
+        .optional()
+        .isLength({ max: 1000 })
+        .withMessage('Certifications must not exceed 1000 characters'),
+    body('vehicleInfo')
+        .optional()
+        .isLength({ max: 500 })
+        .withMessage('Vehicle info must not exceed 500 characters'),
+    body('occupancyType')
+        .optional()
+        .isIn(['Owner', 'Tenant', 'Guest'])
+        .withMessage('Occupancy type must be Owner, Tenant, or Guest'),
+    body('systemAccess')
+        .optional()
+        .isIn(['Full', 'Limited'])
+        .withMessage('System access must be Full or Limited'),
+    body('managedBuildingsList')
+        .optional()
+        .isLength({ max: 1000 })
+        .withMessage('Managed buildings must not exceed 1000 characters'),
 ];
 
 const validateChangePassword = [
@@ -209,7 +255,7 @@ const sanitizeInput = (req, res, next) => {
     // Recursively sanitize all string inputs
     const sanitizeObject = (obj) => {
         if (typeof obj !== 'object' || obj === null) return obj;
-        
+
         for (const key in obj) {
             if (typeof obj[key] === 'string') {
                 // Remove potential XSS attacks
@@ -227,7 +273,7 @@ const sanitizeInput = (req, res, next) => {
     sanitizeObject(req.body);
     sanitizeObject(req.query);
     sanitizeObject(req.params);
-    
+
     next();
 };
 

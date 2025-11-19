@@ -36,10 +36,15 @@ export const AuthProvider = ({ children }) => {
                         // Invalid token, remove it
                         console.log('❌ Invalid token, removing...');
                         localStorage.removeItem('token');
+                        toast.info('Please login again with your building management account');
                     }
                 } catch (error) {
                     console.error('❌ Token validation failed:', error);
                     localStorage.removeItem('token');
+                    // Check if it's a 404 user not found error (old lab04 token)
+                    if (error.response?.status === 404 || error.response?.status === 401) {
+                        toast.info('Your session has expired. Please login again with your building management account.');
+                    }
                 }
             } else {
                 console.log('ℹ️ No token found, user needs to login');

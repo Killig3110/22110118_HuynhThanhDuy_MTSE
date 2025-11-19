@@ -9,11 +9,18 @@ const {
     updateBuilding,
     deleteBuilding
 } = require('../controllers/building.controller');
-const { 
-    authMiddleware, 
-    requireRole, 
+const {
+    getFloorsByBuilding: getFloorsFromFloorController,
+} = require('../controllers/floor.controller');
+const {
+    getApartmentsByFloor: getApartmentsFromApartmentController,
+    getApartmentsByBuilding
+} = require('../controllers/apartment.controller');
+const {
+    authMiddleware,
+    requireRole,
     managerMiddleware,
-    requireBuildingAccess 
+    requireBuildingAccess
 } = require('../middleware/auth');
 const { handleValidationErrors } = require('../middleware/validation');
 const { generalLimiter, adminLimiter } = require('../middleware/rateLimiter');
@@ -77,34 +84,41 @@ const validateBuildingUpdate = [
 ];
 
 // Public routes (with authentication)
-router.get('/', 
+router.get('/',
     generalLimiter,
     authMiddleware,
     getBuildings
 );
 
-router.get('/:id', 
+router.get('/:id',
     generalLimiter,
     authMiddleware,
     requireBuildingAccess,
     getBuildingById
 );
 
-router.get('/:buildingId/floors', 
+router.get('/:buildingId/floors',
     generalLimiter,
     authMiddleware,
     requireBuildingAccess,
-    getFloorsByBuilding
+    getFloorsFromFloorController
 );
 
-router.get('/floors/:floorId/apartments', 
+router.get('/floors/:floorId/apartments',
     generalLimiter,
     authMiddleware,
-    getApartmentsByFloor
+    getApartmentsFromApartmentController
+);
+
+// Get all apartments by building
+router.get('/:buildingId/apartments',
+    generalLimiter,
+    authMiddleware,
+    getApartmentsByBuilding
 );
 
 // Admin/Manager only routes
-router.post('/', 
+router.post('/',
     adminLimiter,
     authMiddleware,
     managerMiddleware,
@@ -113,7 +127,7 @@ router.post('/',
     createBuilding
 );
 
-router.put('/:id', 
+router.put('/:id',
     adminLimiter,
     authMiddleware,
     managerMiddleware,
@@ -122,7 +136,7 @@ router.put('/:id',
     updateBuilding
 );
 
-router.delete('/:id', 
+router.delete('/:id',
     adminLimiter,
     authMiddleware,
     requireRole(['admin']), // Only admin can delete buildings

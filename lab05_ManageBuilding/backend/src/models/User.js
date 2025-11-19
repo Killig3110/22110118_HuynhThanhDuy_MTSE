@@ -79,7 +79,7 @@ const User = sequelize.define('User', {
         type: DataTypes.DATE,
         allowNull: true
     },
-    
+
     // Role and Position references (to be associated)
     roleId: {
         type: DataTypes.INTEGER,
@@ -96,6 +96,59 @@ const User = sequelize.define('User', {
             model: 'Positions',
             key: 'id'
         }
+    },
+
+    // Role-specific fields
+    emergencyContact: {
+        type: DataTypes.STRING(20),
+        allowNull: true,
+        validate: {
+            len: [10, 20]
+        }
+    },
+    apartmentNumber: {
+        type: DataTypes.STRING(10),
+        allowNull: true
+    },
+    badgeNumber: {
+        type: DataTypes.STRING(20),
+        allowNull: true
+    },
+    licenseNumber: {
+        type: DataTypes.STRING(50),
+        allowNull: true
+    },
+    specialization: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+    },
+    workSchedule: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    shiftSchedule: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    certifications: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    vehicleInfo: {
+        type: DataTypes.TEXT,
+        allowNull: true
+    },
+    occupancyType: {
+        type: DataTypes.ENUM('Owner', 'Tenant', 'Guest'),
+        allowNull: true
+    },
+    systemAccess: {
+        type: DataTypes.ENUM('Full', 'Limited'),
+        allowNull: true
+    },
+    managedBuildingsList: {
+        type: DataTypes.TEXT,
+        allowNull: true
     }
 }, {
     hooks: {

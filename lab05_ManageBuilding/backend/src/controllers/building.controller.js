@@ -1,5 +1,7 @@
-const { Building, Block, Floor, Apartment, User, HouseholdMember } = require('../models');
 const { Op } = require('sequelize');
+const { Building, Block, Floor, Apartment, User, HouseholdMember } = require('../models');
+const { ApiError, catchAsync } = require('../utils/helpers');
+const { getPagination, getPagingData } = require('../utils/pagination');
 
 // Get all buildings with pagination and lazy loading
 const getBuildings = async (req, res) => {
@@ -19,7 +21,7 @@ const getBuildings = async (req, res) => {
 
         // Build where clause
         const whereClause = {};
-        
+
         if (search) {
             whereClause[Op.or] = [
                 { name: { [Op.like]: `%${search}%` } },
@@ -416,7 +418,7 @@ const updateBuilding = async (req, res) => {
         // If updating building code, check uniqueness
         if (updateData.buildingCode && updateData.buildingCode !== building.buildingCode) {
             const existingBuilding = await Building.findOne({
-                where: { 
+                where: {
                     buildingCode: updateData.buildingCode,
                     id: { [Op.ne]: id }
                 }
@@ -477,9 +479,9 @@ const deleteBuilding = async (req, res) => {
         }
 
         // Soft delete
-        await building.update({ 
+        await building.update({
             isActive: false,
-            status: 'inactive' 
+            status: 'inactive'
         });
 
         res.json({

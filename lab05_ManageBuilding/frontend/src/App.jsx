@@ -14,6 +14,7 @@ import UserList from './pages/users/UserList';
 import UserCreate from './pages/users/UserCreate';
 import UserEdit from './pages/users/UserEdit';
 import BuildingList from './pages/buildings/BuildingList';
+import InteractiveBuildingMap from './pages/buildings/InteractiveBuildingMap';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -34,11 +35,11 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     if (requiredRole) {
         const userRole = user.role?.name;
 
-        if (requiredRole === 'Admin' && userRole !== 'Admin') {
+        if (requiredRole === 'admin' && userRole !== 'admin') {
             return <Navigate to="/dashboard" replace />;
         }
 
-        if (requiredRole === 'Manager' && !['Admin', 'Manager'].includes(userRole)) {
+        if (requiredRole === 'building_manager' && !['admin', 'building_manager'].includes(userRole)) {
             return <Navigate to="/dashboard" replace />;
         }
     }
@@ -137,27 +138,27 @@ function App() {
                             }
                         />
 
-                        {/* User Management Routes (Manager/Admin only) */}
+                        {/* System Management Routes (Admin only) */}
                         <Route
-                            path="/users"
+                            path="/management"
                             element={
-                                <ProtectedRoute requiredRole="Manager">
+                                <ProtectedRoute requiredRole="admin">
                                     <UserList />
                                 </ProtectedRoute>
                             }
                         />
                         <Route
-                            path="/users/create"
+                            path="/management/users/create"
                             element={
-                                <ProtectedRoute requiredRole="Admin">
+                                <ProtectedRoute requiredRole="admin">
                                     <UserCreate />
                                 </ProtectedRoute>
                             }
                         />
                         <Route
-                            path="/users/edit/:id"
+                            path="/management/users/edit/:id"
                             element={
-                                <ProtectedRoute requiredRole="Admin">
+                                <ProtectedRoute requiredRole="admin">
                                     <UserEdit />
                                 </ProtectedRoute>
                             }
@@ -169,6 +170,14 @@ function App() {
                             element={
                                 <ProtectedRoute>
                                     <BuildingList />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/buildings/map"
+                            element={
+                                <ProtectedRoute>
+                                    <InteractiveBuildingMap />
                                 </ProtectedRoute>
                             }
                         />

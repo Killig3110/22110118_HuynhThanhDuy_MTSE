@@ -8,6 +8,9 @@ const { sequelize } = require('./config/database');
 const authRoutes = require('./routes/auth.routes');
 const userRoutes = require('./routes/user.routes');
 const buildingRoutes = require('./routes/building.routes');
+const blockRoutes = require('./routes/block.routes');
+const floorRoutes = require('./routes/floor.routes');
+const apartmentRoutes = require('./routes/apartment.routes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/validation');
@@ -79,11 +82,14 @@ app.use(sanitizeInput);
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/buildings', buildingRoutes);
+app.use('/api/blocks', blockRoutes);
+app.use('/api/floors', floorRoutes);
+app.use('/api/apartments', apartmentRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
+    res.json({
+        status: 'OK',
         message: 'Building Management System API is running',
         timestamp: new Date().toISOString(),
         version: '1.0.0'
@@ -137,7 +143,7 @@ app.use(errorHandler);
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({ 
+    res.status(404).json({
         success: false,
         message: 'API endpoint not found',
         path: req.path,
