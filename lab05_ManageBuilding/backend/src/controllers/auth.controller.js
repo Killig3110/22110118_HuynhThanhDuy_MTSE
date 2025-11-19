@@ -564,8 +564,219 @@ const changePassword = async (req, res) => {
     }
 };
 
+// Specific registration for residents
+const registerResident = async (req, res) => {
+    try {
+        const {
+            firstName,
+            lastName,
+            email,
+            password,
+            phone,
+            dateOfBirth,
+            gender,
+            emergencyContact,
+            idProofType,
+            idProofNumber,
+            occupation,
+            address
+        } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        // Get resident role
+        const residentRole = await Role.findOne({ where: { name: 'resident' } });
+        const residentPosition = await Position.findOne({ where: { title: 'Resident' } });
+
+        if (!residentRole) {
+            return res.status(500).json({
+                success: false,
+                message: 'Resident role not found in system'
+            });
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Create user
+        const userData = {
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            phone,
+            dateOfBirth,
+            gender,
+            address,
+            emergencyContact,
+            idProofType,
+            idProofNumber,
+            occupation,
+            roleId: residentRole.id,
+            positionId: residentPosition?.id,
+            isActive: true, // Residents are active by default, but may need approval
+            emailVerified: false
+        };
+
+        const user = await User.create(userData);
+
+        // Generate token
+        const token = generateToken(user.id);
+        const refreshToken = generateRefreshToken(user.id);
+
+        // Get user with associations (exclude sensitive data)
+        const userWithDetails = await User.findByPk(user.id, {
+            include: [
+                { model: Role, as: 'role' },
+                { model: Position, as: 'position' }
+            ],
+            attributes: { exclude: ['password', 'resetToken', 'resetTokenExpiry'] }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Resident registered successfully. Please wait for approval.',
+            data: {
+                user: userWithDetails,
+                token,
+                refreshToken
+            }
+        });
+    } catch (error) {
+        console.error('Resident registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Registration failed',
+            error: error.message
+        });
+    }
+};
+
+// Registration for staff (admin/manager only)
+const registerStaff = async (req, res) => {
+    try {
+        const {
+            firstName,
+            lastName,
+            email,
+            password,
+            phone,
+            dateOfBirth,
+            roleId,
+            positionId,
+            employeeId,
+            department,
+            hireDate
+        } = req.body;
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ where: { email } });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        // Validate role and position
+        const role = await Role.findByPk(roleId);
+        if (!role || !role.isActive) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid role selected'
+            });
+        }
+
+        let position = null;
+        if (positionId) {
+            position = await Position.findByPk(positionId);
+            if (!position || !position.isActive) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid position selected'
+                });
+            }
+        }
+
+        // Only allow certain roles to be registered
+        const allowedStaffRoles = ['building_manager', 'security', 'technician', 'accountant'];
+        if (!allowedStaffRoles.includes(role.name)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid role for staff registration'
+            });
+        }
+
+        // Check if employee ID is already used
+        if (employeeId) {
+            const existingEmployee = await User.findOne({ where: { employeeId } });
+            if (existingEmployee) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Employee ID already exists'
+                });
+            }
+        }
+
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Create user
+        const userData = {
+            firstName,
+            lastName,
+            email,
+            password: hashedPassword,
+            phone,
+            dateOfBirth,
+            roleId,
+            positionId,
+            employeeId,
+            department: department || position?.department,
+            hireDate,
+            isActive: true,
+            emailVerified: true // Staff accounts are verified by default
+        };
+
+        const user = await User.create(userData);
+
+        // Get user with associations (exclude sensitive data)
+        const userWithDetails = await User.findByPk(user.id, {
+            include: [
+                { model: Role, as: 'role' },
+                { model: Position, as: 'position' }
+            ],
+            attributes: { exclude: ['password', 'resetToken', 'resetTokenExpiry'] }
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Staff registered successfully',
+            data: {
+                user: userWithDetails
+            }
+        });
+    } catch (error) {
+        console.error('Staff registration error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Staff registration failed',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     register,
+    registerResident,
+    registerStaff,
     login,
     refreshTokenEndpoint,
     logout,

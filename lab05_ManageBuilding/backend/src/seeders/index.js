@@ -57,7 +57,10 @@ async function seedDatabase() {
 
         // 2. Sync database (create tables)
         console.log('🔄 Syncing database (force: true)...');
+        // Disable foreign key checks temporarily
+        await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
         await sequelize.sync({ force: true }); // drop + recreate all tables
+        await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
         console.log('✅ Database synced successfully');
 
         // 3. Seed Roles
