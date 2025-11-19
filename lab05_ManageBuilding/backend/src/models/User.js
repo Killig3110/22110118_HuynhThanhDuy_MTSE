@@ -79,7 +79,7 @@ const User = sequelize.define('User', {
         type: DataTypes.DATE,
         allowNull: true
     },
-    
+
     // Role and Position references (to be associated)
     roleId: {
         type: DataTypes.INTEGER,

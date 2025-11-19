@@ -41,23 +41,23 @@ const Navbar = () => {
                                 Buildings
                             </Link>
 
-                            {(user?.role?.name === 'Manager' || user?.role?.name === 'Admin') && (
+                            {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (
                                 <Link
-                                    to="/users"
+                                    to="/residents"
                                     className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
                                 >
                                     <Users className="h-4 w-4 mr-2" />
-                                    Users
+                                    Residents
                                 </Link>
                             )}
 
-                            {user?.role?.name === 'Admin' && (
+                            {user?.role?.name === 'admin' && (
                                 <Link
-                                    to="/users/create"
+                                    to="/management"
                                     className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
                                 >
                                     <UserPlus className="h-4 w-4 mr-2" />
-                                    Create User
+                                    Management
                                 </Link>
                             )}
                         </div>
@@ -159,23 +159,31 @@ const Navbar = () => {
                         Dashboard
                     </Link>
 
-                    {(user?.role?.name === 'Manager' || user?.role?.name === 'Admin') && (
+                    <Link
+                        to="/buildings"
+                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                        <Building2 className="h-5 w-5 mr-3" />
+                        Buildings
+                    </Link>
+
+                    {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (
                         <Link
-                            to="/users"
+                            to="/residents"
                             className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                         >
                             <Users className="h-5 w-5 mr-3" />
-                            Users
+                            Residents
                         </Link>
                     )}
 
-                    {user?.role?.name === 'Admin' && (
+                    {user?.role?.name === 'admin' && (
                         <Link
-                            to="/users/create"
+                            to="/management"
                             className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                         >
                             <UserPlus className="h-5 w-5 mr-3" />
-                            Create User
+                            Management
                         </Link>
                     )}
 

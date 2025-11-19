@@ -77,7 +77,7 @@ const validateDateOfBirth = body('dateOfBirth')
         const birthDate = new Date(value);
         const today = new Date();
         const age = today.getFullYear() - birthDate.getFullYear();
-        
+
         if (age < 18 || age > 120) {
             throw new Error('Age must be between 18 and 120 years');
         }
@@ -209,7 +209,7 @@ const sanitizeInput = (req, res, next) => {
     // Recursively sanitize all string inputs
     const sanitizeObject = (obj) => {
         if (typeof obj !== 'object' || obj === null) return obj;
-        
+
         for (const key in obj) {
             if (typeof obj[key] === 'string') {
                 // Remove potential XSS attacks
@@ -227,7 +227,7 @@ const sanitizeInput = (req, res, next) => {
     sanitizeObject(req.body);
     sanitizeObject(req.query);
     sanitizeObject(req.params);
-    
+
     next();
 };
 

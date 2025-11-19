@@ -82,8 +82,8 @@ app.use('/api/buildings', buildingRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-    res.json({ 
-        status: 'OK', 
+    res.json({
+        status: 'OK',
         message: 'Building Management System API is running',
         timestamp: new Date().toISOString(),
         version: '1.0.0'
@@ -137,7 +137,7 @@ app.use(errorHandler);
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({ 
+    res.status(404).json({
         success: false,
         message: 'API endpoint not found',
         path: req.path,
