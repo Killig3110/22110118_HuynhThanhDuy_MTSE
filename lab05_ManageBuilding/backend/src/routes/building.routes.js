@@ -10,6 +10,13 @@ const {
     deleteBuilding
 } = require('../controllers/building.controller');
 const {
+    getFloorsByBuilding: getFloorsFromFloorController,
+} = require('../controllers/floor.controller');
+const {
+    getApartmentsByFloor: getApartmentsFromApartmentController,
+    getApartmentsByBuilding
+} = require('../controllers/apartment.controller');
+const {
     authMiddleware,
     requireRole,
     managerMiddleware,
@@ -94,13 +101,20 @@ router.get('/:buildingId/floors',
     generalLimiter,
     authMiddleware,
     requireBuildingAccess,
-    getFloorsByBuilding
+    getFloorsFromFloorController
 );
 
 router.get('/floors/:floorId/apartments',
     generalLimiter,
     authMiddleware,
-    getApartmentsByFloor
+    getApartmentsFromApartmentController
+);
+
+// Get all apartments by building
+router.get('/:buildingId/apartments',
+    generalLimiter,
+    authMiddleware,
+    getApartmentsByBuilding
 );
 
 // Admin/Manager only routes

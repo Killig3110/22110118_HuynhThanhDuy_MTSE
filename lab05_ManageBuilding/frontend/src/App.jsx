@@ -14,6 +14,7 @@ import UserList from './pages/users/UserList';
 import UserCreate from './pages/users/UserCreate';
 import UserEdit from './pages/users/UserEdit';
 import BuildingList from './pages/buildings/BuildingList';
+import InteractiveBuildingMap from './pages/buildings/InteractiveBuildingMap';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -169,6 +170,14 @@ function App() {
                             element={
                                 <ProtectedRoute>
                                     <BuildingList />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/buildings/map"
+                            element={
+                                <ProtectedRoute>
+                                    <InteractiveBuildingMap />
                                 </ProtectedRoute>
                             }
                         />

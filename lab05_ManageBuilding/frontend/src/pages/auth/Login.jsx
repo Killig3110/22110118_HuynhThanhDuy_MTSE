@@ -23,14 +23,14 @@ const Login = () => {
     const { login, isLoading } = useAuth();
     const navigate = useNavigate();
 
-    // Test accounts from seeder
+    // Test accounts from building management seeder
     const testAccounts = [
-        { email: 'admin@building.com', password: '123456', role: 'Admin' },
-        { email: 'blockmanager@building.com', password: '123456', role: 'Block Manager' },
-        { email: 'buildingmanager@building.com', password: '123456', role: 'Building Manager' },
-        { email: 'resident@building.com', password: '123456', role: 'Resident' },
-        { email: 'student@building.com', password: '123456', role: 'Student' },
-        { email: 'security@building.com', password: '123456', role: 'Security' }
+        { email: 'admin@building.com', password: '123456', role: 'System Administrator', department: 'IT' },
+        { email: 'blockmanager@building.com', password: '123456', role: 'Block Manager', department: 'Management' },
+        { email: 'buildingmanager@building.com', password: '123456', role: 'Building Manager', department: 'Management' },
+        { email: 'resident@building.com', password: '123456', role: 'Resident', department: 'Residential' },
+        { email: 'student@building.com', password: '123456', role: 'Student Resident', department: 'Residential' },
+        { email: 'security@building.com', password: '123456', role: 'Head of Security', department: 'Security' }
     ];
 
     const {
@@ -226,9 +226,14 @@ const Login = () => {
                                             onClick={() => handleTestLogin(account)}
                                             className="w-full text-left p-3 text-sm bg-white border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                                         >
-                                            <div className="font-medium text-gray-900">{account.role}</div>
-                                            <div className="text-gray-600">{account.email}</div>
-                                            <div className="text-xs text-gray-500">Password: {account.password}</div>
+                                            <div className="flex justify-between items-center">
+                                                <div>
+                                                    <div className="font-medium text-gray-900">{account.role}</div>
+                                                    <div className="text-gray-600">{account.email}</div>
+                                                    <div className="text-xs text-gray-500">{account.department} • Password: {account.password}</div>
+                                                </div>
+                                                <div className="text-xs text-blue-600">Click to login</div>
+                                            </div>
                                         </button>
                                     ))}
                                 </div>
@@ -241,24 +246,15 @@ const Login = () => {
                         {/* Security Features Notice */}
                         <div className="mt-6 p-4 bg-blue-50 rounded-md border border-blue-200">
                             <h3 className="text-sm font-medium text-blue-900 mb-2 flex items-center">
-                                🔒 Security Features Implemented:
+                                🔒 Building Management System - Security Features:
                             </h3>
                             <ul className="text-xs text-blue-800 space-y-1">
                                 <li>• <strong>Rate Limiting:</strong> Max 10 login attempts per 15 minutes</li>
                                 <li>• <strong>Input Validation:</strong> Email & password validation with sanitization</li>
                                 <li>• <strong>Authentication:</strong> JWT tokens with 15-minute expiry</li>
                                 <li>• <strong>Authorization:</strong> Role-based access control (6 user roles)</li>
+                                <li>• <strong>Building Access:</strong> Lazy loading with pagination</li>
                             </ul>
-                        </div>
-                    </div>
-                    <div className="mt-6 border-t border-gray-200 pt-6">
-                        <div className="text-sm text-gray-600">
-                            <p className="font-medium mb-2">Test Credentials:</p>
-                            <div className="space-y-1 text-xs">
-                                <p><strong>Admin:</strong> admin@example.com / admin123</p>
-                                <p><strong>Manager:</strong> manager@example.com / manager123</p>
-                                <p><strong>Employee:</strong> alice@example.com / alice123</p>
-                            </div>
                         </div>
                     </div>
                 </div>

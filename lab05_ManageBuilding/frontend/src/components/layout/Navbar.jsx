@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2 } from 'lucide-react';
+import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -39,6 +39,14 @@ const Navbar = () => {
                             >
                                 <Building2 className="h-4 w-4 mr-2" />
                                 Buildings
+                            </Link>
+
+                            <Link
+                                to="/buildings/map"
+                                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                            >
+                                <MapPin className="h-4 w-4 mr-2" />
+                                Interactive Map
                             </Link>
 
                             {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (

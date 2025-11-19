@@ -475,7 +475,13 @@ const getProfile = async (req, res) => {
 
 const updateProfile = async (req, res) => {
     try {
-        const { firstName, lastName, phone, address, dateOfBirth } = req.body;
+        const {
+            firstName, lastName, phone, address, dateOfBirth,
+            emergencyContact, apartmentNumber, badgeNumber, licenseNumber,
+            specialization, workSchedule, shiftSchedule, certifications,
+            vehicleInfo, occupancyType, systemAccess, managedBuildingsList
+        } = req.body;
+
         const user = await User.findByPk(req.user.id);
 
         if (!user) {
@@ -485,12 +491,26 @@ const updateProfile = async (req, res) => {
             });
         }
 
-        // Update user fields - allow empty strings but not undefined
+        // Update basic fields - allow empty strings but not undefined
         if (firstName !== undefined) user.firstName = firstName;
         if (lastName !== undefined) user.lastName = lastName;
         if (phone !== undefined) user.phone = phone;
         if (address !== undefined) user.address = address;
         if (dateOfBirth !== undefined) user.dateOfBirth = dateOfBirth;
+
+        // Update role-specific fields
+        if (emergencyContact !== undefined) user.emergencyContact = emergencyContact;
+        if (apartmentNumber !== undefined) user.apartmentNumber = apartmentNumber;
+        if (badgeNumber !== undefined) user.badgeNumber = badgeNumber;
+        if (licenseNumber !== undefined) user.licenseNumber = licenseNumber;
+        if (specialization !== undefined) user.specialization = specialization;
+        if (workSchedule !== undefined) user.workSchedule = workSchedule;
+        if (shiftSchedule !== undefined) user.shiftSchedule = shiftSchedule;
+        if (certifications !== undefined) user.certifications = certifications;
+        if (vehicleInfo !== undefined) user.vehicleInfo = vehicleInfo;
+        if (occupancyType !== undefined) user.occupancyType = occupancyType;
+        if (systemAccess !== undefined) user.systemAccess = systemAccess;
+        if (managedBuildingsList !== undefined) user.managedBuildingsList = managedBuildingsList;
 
         await user.save();
 

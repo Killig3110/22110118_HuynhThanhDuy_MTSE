@@ -6,24 +6,90 @@ import { User, Mail, Phone, MapPin, Calendar, Camera, Lock, Save, Eye, EyeOff } 
 import { useAuth } from '../contexts/AuthContext';
 import AvatarUpload from '../components/AvatarUpload';
 
-const profileSchema = yup.object({
-    firstName: yup
-        .string()
-        .min(2, 'First name must be at least 2 characters')
-        .max(50, 'First name must not exceed 50 characters')
-        .required('First name is required'),
-    lastName: yup
-        .string()
-        .min(2, 'Last name must be at least 2 characters')
-        .max(50, 'Last name must not exceed 50 characters')
-        .required('Last name is required'),
-    phone: yup
-        .string()
-        .matches(/^[0-9+\-\s()]+$/, 'Invalid phone number format')
-        .optional(),
-    address: yup.string().optional(),
-    dateOfBirth: yup.date().max(new Date(), 'Date of birth cannot be in the future').optional(),
-});
+// Role-based field configuration
+const getRoleFields = (role) => {
+    const baseFields = {
+        firstName: { label: 'First Name', required: true, icon: User },
+        lastName: { label: 'Last Name', required: true, icon: User },
+        phone: { label: 'Phone Number', required: false, icon: Phone },
+        address: { label: 'Address', required: false, icon: MapPin },
+        dateOfBirth: { label: 'Date of Birth', required: false, icon: Calendar, type: 'date' }
+    };
+
+    const roleSpecificFields = {
+        admin: {
+            ...baseFields,
+            emergencyContact: { label: 'Emergency Contact', required: true, icon: Phone },
+            systemAccess: { label: 'System Access Level', required: false, type: 'select', options: ['Full', 'Limited'] }
+        },
+        building_manager: {
+            ...baseFields,
+            managedBuildingsList: { label: 'Managed Buildings', required: false, type: 'textarea' },
+            workSchedule: { label: 'Work Schedule', required: false, type: 'text' },
+            emergencyContact: { label: 'Emergency Contact', required: true, icon: Phone }
+        },
+        resident: {
+            ...baseFields,
+            apartmentNumber: { label: 'Apartment Number', required: false, type: 'text' },
+            occupancyType: { label: 'Occupancy Type', required: false, type: 'select', options: ['Owner', 'Tenant', 'Guest'] },
+            emergencyContact: { label: 'Emergency Contact', required: true, icon: Phone },
+            vehicleInfo: { label: 'Vehicle Information', required: false, type: 'textarea' }
+        },
+        security: {
+            ...baseFields,
+            badgeNumber: { label: 'Security Badge Number', required: true, type: 'text' },
+            shiftSchedule: { label: 'Shift Schedule', required: false, type: 'text' },
+            emergencyContact: { label: 'Emergency Contact', required: true, icon: Phone },
+            certifications: { label: 'Security Certifications', required: false, type: 'textarea' }
+        },
+        technician: {
+            ...baseFields,
+            specialization: { label: 'Technical Specialization', required: false, type: 'text' },
+            workSchedule: { label: 'Work Schedule', required: false, type: 'text' },
+            emergencyContact: { label: 'Emergency Contact', required: true, icon: Phone },
+            certifications: { label: 'Technical Certifications', required: false, type: 'textarea' }
+        },
+        accountant: {
+            ...baseFields,
+            licenseNumber: { label: 'Accounting License Number', required: false, type: 'text' },
+            workSchedule: { label: 'Work Schedule', required: false, type: 'text' },
+            emergencyContact: { label: 'Emergency Contact', required: true, icon: Phone }
+        }
+    };
+
+    return roleSpecificFields[role] || baseFields;
+};
+
+// Dynamic schema based on user role
+const createProfileSchema = (userRole) => {
+    const fields = getRoleFields(userRole);
+    const schemaFields = {};
+
+    Object.entries(fields).forEach(([fieldName, config]) => {
+        let fieldSchema = yup.string();
+
+        if (fieldName === 'dateOfBirth') {
+            fieldSchema = yup.date().max(new Date(), 'Date of birth cannot be in the future');
+        } else if (fieldName === 'phone' || fieldName === 'emergencyContact') {
+            fieldSchema = yup.string().matches(/^[0-9+\-\s()]+$/, 'Invalid phone number format');
+        }
+
+        if (config.required) {
+            fieldSchema = fieldSchema.required(`${config.label} is required`);
+        } else {
+            fieldSchema = fieldSchema.optional();
+        }
+
+        if (fieldName === 'firstName' || fieldName === 'lastName') {
+            fieldSchema = fieldSchema.min(2, `${config.label} must be at least 2 characters`)
+                .max(50, `${config.label} must not exceed 50 characters`);
+        }
+
+        schemaFields[fieldName] = fieldSchema;
+    });
+
+    return yup.object(schemaFields);
+};
 
 const passwordSchema = yup.object({
     currentPassword: yup
@@ -46,9 +112,16 @@ const Profile = () => {
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+    // Get user role and dynamic fields
+    const userRole = user?.role?.name || 'resident';
+    const roleFields = getRoleFields(userRole);
+    const dynamicSchema = createProfileSchema(userRole);
+
     // Debug user data
     console.log('👤 Profile component user data:', {
         user,
+        userRole,
+        roleFields: Object.keys(roleFields),
         avatar: user?.avatar,
         localStorage: localStorage.getItem('user')
     });
@@ -86,16 +159,17 @@ const Profile = () => {
         }
     };
 
-    // Profile form
+    // Profile form with dynamic schema
     const profileForm = useForm({
-        resolver: yupResolver(profileSchema),
-        defaultValues: {
-            firstName: user?.firstName || '',
-            lastName: user?.lastName || '',
-            phone: user?.phone || '',
-            address: user?.address || '',
-            dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
-        },
+        resolver: yupResolver(dynamicSchema),
+        defaultValues: Object.keys(roleFields).reduce((acc, fieldName) => {
+            if (fieldName === 'dateOfBirth') {
+                acc[fieldName] = user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '';
+            } else {
+                acc[fieldName] = user?.[fieldName] || '';
+            }
+            return acc;
+        }, {}),
     });
 
     // Password form
@@ -154,14 +228,17 @@ const Profile = () => {
         console.log('📥 Profile update result:', result);
 
         if (result.success) {
-            // Reset form with updated values
-            profileForm.reset({
-                firstName: user?.firstName || '',
-                lastName: user?.lastName || '',
-                phone: user?.phone || '',
-                address: user?.address || '',
-                dateOfBirth: user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
-            });
+            // Reset form with updated values using dynamic fields
+            const resetValues = Object.keys(roleFields).reduce((acc, fieldName) => {
+                if (fieldName === 'dateOfBirth') {
+                    acc[fieldName] = user?.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '';
+                } else {
+                    acc[fieldName] = user?.[fieldName] || '';
+                }
+                return acc;
+            }, {});
+
+            profileForm.reset(resetValues);
         } else {
             profileForm.setError('root', {
                 type: 'manual',
@@ -314,105 +391,77 @@ const Profile = () => {
                                     <h3 className="text-lg font-medium text-gray-900 mb-4">
                                         Update Information
                                     </h3>
+
+                                    {/* Role Information */}
+                                    <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+                                        <div className="flex items-center space-x-2">
+                                            <span className="text-sm font-medium text-blue-900">Your Role:</span>
+                                            <span className="text-sm text-blue-700">{user?.role?.name} - {user?.position?.title}</span>
+                                        </div>
+                                        <p className="text-xs text-blue-600 mt-1">
+                                            Profile fields are customized based on your role in the building management system.
+                                        </p>
+                                    </div>
+
                                     <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-                                        {/* First Name & Last Name */}
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div>
-                                                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                                                    First Name
+                                        {Object.entries(roleFields).map(([fieldName, config]) => (
+                                            <div key={fieldName} className={config.type === 'textarea' ? 'col-span-2' : ''}>
+                                                <label htmlFor={fieldName} className="block text-sm font-medium text-gray-700">
+                                                    {config.label} {config.required && <span className="text-red-500">*</span>}
                                                 </label>
-                                                <input
-                                                    {...profileForm.register('firstName')}
-                                                    type="text"
-                                                    className={`
-                            mt-1 block w-full px-3 py-2 border 
-                            ${profileForm.formState.errors.firstName ? 'border-red-300' : 'border-gray-300'}
-                            rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-                          `}
-                                                    placeholder="First name"
-                                                />
-                                                {profileForm.formState.errors.firstName && (
-                                                    <p className="mt-1 text-sm text-red-600">{profileForm.formState.errors.firstName.message}</p>
+
+                                                {config.type === 'select' ? (
+                                                    <select
+                                                        {...profileForm.register(fieldName)}
+                                                        className={`
+                                                            mt-1 block w-full px-3 py-2 border 
+                                                            ${profileForm.formState.errors[fieldName] ? 'border-red-300' : 'border-gray-300'}
+                                                            rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
+                                                        `}
+                                                    >
+                                                        <option value="">Select {config.label}</option>
+                                                        {config.options?.map(option => (
+                                                            <option key={option} value={option}>{option}</option>
+                                                        ))}
+                                                    </select>
+                                                ) : config.type === 'textarea' ? (
+                                                    <textarea
+                                                        {...profileForm.register(fieldName)}
+                                                        rows={3}
+                                                        className={`
+                                                            mt-1 block w-full px-3 py-2 border 
+                                                            ${profileForm.formState.errors[fieldName] ? 'border-red-300' : 'border-gray-300'}
+                                                            rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
+                                                        `}
+                                                        placeholder={`Enter ${config.label.toLowerCase()}`}
+                                                    />
+                                                ) : (
+                                                    <div className="relative">
+                                                        {config.icon && (
+                                                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                                <config.icon className="h-4 w-4 text-gray-400" />
+                                                            </div>
+                                                        )}
+                                                        <input
+                                                            {...profileForm.register(fieldName)}
+                                                            type={config.type || 'text'}
+                                                            className={`
+                                                                mt-1 block w-full ${config.icon ? 'pl-10' : 'pl-3'} pr-3 py-2 border 
+                                                                ${profileForm.formState.errors[fieldName] ? 'border-red-300' : 'border-gray-300'}
+                                                                rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
+                                                            `}
+                                                            placeholder={`Enter ${config.label.toLowerCase()}`}
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {profileForm.formState.errors[fieldName] && (
+                                                    <p className="mt-1 text-sm text-red-600">
+                                                        {profileForm.formState.errors[fieldName].message}
+                                                    </p>
                                                 )}
                                             </div>
-                                            <div>
-                                                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                                                    Last Name
-                                                </label>
-                                                <input
-                                                    {...profileForm.register('lastName')}
-                                                    type="text"
-                                                    className={`
-                            mt-1 block w-full px-3 py-2 border 
-                            ${profileForm.formState.errors.lastName ? 'border-red-300' : 'border-gray-300'}
-                            rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-                          `}
-                                                    placeholder="Last name"
-                                                />
-                                                {profileForm.formState.errors.lastName && (
-                                                    <p className="mt-1 text-sm text-red-600">{profileForm.formState.errors.lastName.message}</p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        {/* Phone */}
-                                        <div>
-                                            <label htmlFor="phone" className="block text-sm font-medium text-gray-700">
-                                                Phone Number
-                                            </label>
-                                            <input
-                                                {...profileForm.register('phone')}
-                                                type="tel"
-                                                className={`
-                          mt-1 block w-full px-3 py-2 border 
-                          ${profileForm.formState.errors.phone ? 'border-red-300' : 'border-gray-300'}
-                          rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-                        `}
-                                                placeholder="Phone number"
-                                            />
-                                            {profileForm.formState.errors.phone && (
-                                                <p className="mt-1 text-sm text-red-600">{profileForm.formState.errors.phone.message}</p>
-                                            )}
-                                        </div>
-
-                                        {/* Date of Birth */}
-                                        <div>
-                                            <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700">
-                                                Date of Birth
-                                            </label>
-                                            <input
-                                                {...profileForm.register('dateOfBirth')}
-                                                type="date"
-                                                className={`
-                          mt-1 block w-full px-3 py-2 border 
-                          ${profileForm.formState.errors.dateOfBirth ? 'border-red-300' : 'border-gray-300'}
-                          rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-                        `}
-                                            />
-                                            {profileForm.formState.errors.dateOfBirth && (
-                                                <p className="mt-1 text-sm text-red-600">{profileForm.formState.errors.dateOfBirth.message}</p>
-                                            )}
-                                        </div>
-
-                                        {/* Address */}
-                                        <div>
-                                            <label htmlFor="address" className="block text-sm font-medium text-gray-700">
-                                                Address
-                                            </label>
-                                            <textarea
-                                                {...profileForm.register('address')}
-                                                rows={3}
-                                                className={`
-                          mt-1 block w-full px-3 py-2 border 
-                          ${profileForm.formState.errors.address ? 'border-red-300' : 'border-gray-300'}
-                          rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm
-                        `}
-                                                placeholder="Enter your address"
-                                            />
-                                            {profileForm.formState.errors.address && (
-                                                <p className="mt-1 text-sm text-red-600">{profileForm.formState.errors.address.message}</p>
-                                            )}
-                                        </div>
+                                        ))}
 
                                         {/* Error Message */}
                                         {profileForm.formState.errors.root && (
