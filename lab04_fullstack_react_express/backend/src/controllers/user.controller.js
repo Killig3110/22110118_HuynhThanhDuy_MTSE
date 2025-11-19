@@ -416,6 +416,100 @@ const getPositions = async (req, res) => {
     }
 };
 
+// Upload avatar function
+const uploadAvatar = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng chọn file ảnh'
+            });
+        }
+
+        const userId = req.user.id;
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            // Xóa file vừa upload nếu user không tồn tại
+            fs.unlinkSync(req.file.path);
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Xóa avatar cũ nếu có
+        if (user.avatar) {
+            const oldAvatarPath = path.join(__dirname, '../../uploads/avatars', path.basename(user.avatar));
+            if (fs.existsSync(oldAvatarPath)) {
+                fs.unlinkSync(oldAvatarPath);
+            }
+        }
+
+        // Cập nhật avatar path trong database
+        const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+        await user.update({ avatar: avatarUrl });
+
+        res.json({
+            success: true,
+            message: 'Avatar uploaded successfully',
+            data: {
+                avatarUrl: avatarUrl
+            }
+        });
+    } catch (error) {
+        // Xóa file upload nếu có lỗi
+        if (req.file) {
+            fs.unlinkSync(req.file.path);
+        }
+
+        console.error('Upload avatar error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload avatar',
+            error: error.message
+        });
+    }
+};
+
+// Delete avatar function
+const deleteAvatar = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const user = await User.findByPk(userId);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Xóa file avatar nếu có
+        if (user.avatar) {
+            const avatarPath = path.join(__dirname, '../../uploads/avatars', path.basename(user.avatar));
+            if (fs.existsSync(avatarPath)) {
+                fs.unlinkSync(avatarPath);
+            }
+
+            // Cập nhật database
+            await user.update({ avatar: null });
+        }
+
+        res.json({
+            success: true,
+            message: 'Avatar deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete avatar error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete avatar',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     getAllUsers,
     getUserById,
@@ -424,5 +518,7 @@ module.exports = {
     deleteUser,
     toggleUserStatus,
     getRoles,
-    getPositions
+    getPositions,
+    uploadAvatar,
+    deleteAvatar
 };

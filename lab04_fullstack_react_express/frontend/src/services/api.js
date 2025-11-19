@@ -13,9 +13,30 @@ const api = axios.create({
 // Request interceptor to add authorization token
 api.interceptors.request.use(
     (config) => {
-        const token = Cookies.get('token');
+        const token = localStorage.getItem('token');
         console.log('🔑 API Request:', config.method?.toUpperCase(), config.url, token ? 'Token present' : 'No token');
+
         if (token) {
+            // Check if token is expired (basic check - decode JWT payload)
+            try {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                const now = Date.now() / 1000;
+                console.log('🕒 Token check:', {
+                    exp: payload.exp,
+                    now: now,
+                    expired: payload.exp < now
+                });
+
+                if (payload.exp < now) {
+                    console.warn('⏰ Token expired, removing...');
+                    Cookies.remove('token');
+                    window.location.href = '/login';
+                    return Promise.reject(new Error('Token expired'));
+                }
+            } catch (e) {
+                console.warn('🚫 Invalid token format');
+            }
+
             config.headers.Authorization = `Bearer ${token}`;
         }
         return config;

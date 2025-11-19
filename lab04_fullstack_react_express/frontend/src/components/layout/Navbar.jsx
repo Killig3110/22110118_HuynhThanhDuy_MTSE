@@ -66,10 +66,26 @@ const Navbar = () => {
                         {/* User Profile Dropdown */}
                         <div className="relative group">
                             <button className="flex items-center space-x-3 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 p-2 hover:bg-gray-50 transition-colors">
-                                <div className="h-8 w-8 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-medium text-sm">
-                                        {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                                    </span>
+                                <div className="h-8 w-8 rounded-full overflow-hidden border-2 border-gray-200">
+                                    {user?.avatar ? (
+                                        <img
+                                            src={user.avatar}
+                                            alt="Avatar"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback to initials if image fails to load
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <div
+                                        className={`h-full w-full bg-blue-500 rounded-full flex items-center justify-center ${user?.avatar ? 'hidden' : 'flex'}`}
+                                    >
+                                        <span className="text-white font-medium text-sm">
+                                            {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                                        </span>
+                                    </div>
                                 </div>
                                 <div className="hidden md:block text-left">
                                     <div className="text-sm font-medium text-gray-900">

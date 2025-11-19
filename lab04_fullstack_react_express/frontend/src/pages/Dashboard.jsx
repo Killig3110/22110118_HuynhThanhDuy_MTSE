@@ -111,10 +111,26 @@ const Dashboard = () => {
                     <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-lg shadow-lg p-6">
                         <div className="flex items-center">
                             <div className="flex-shrink-0">
-                                <div className="h-16 w-16 bg-blue-500 rounded-full flex items-center justify-center">
-                                    <span className="text-xl font-bold text-white">
-                                        {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
-                                    </span>
+                                <div className="h-16 w-16 rounded-full overflow-hidden border-4 border-blue-300">
+                                    {user?.avatar ? (
+                                        <img
+                                            src={user.avatar}
+                                            alt="Avatar"
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                // Fallback to initials if image fails to load
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <div
+                                        className={`h-full w-full bg-blue-500 rounded-full flex items-center justify-center ${user?.avatar ? 'hidden' : 'flex'}`}
+                                    >
+                                        <span className="text-xl font-bold text-white">
+                                            {user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                             <div className="ml-6">

@@ -6,7 +6,13 @@ const { User, Role, Position } = require('../models');
 
 const generateToken = (userId) => {
     return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRE || '7d'
+        expiresIn: '15m' // Short-lived access token
+    });
+};
+
+const generateRefreshToken = (userId) => {
+    return jwt.sign({ id: userId }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, {
+        expiresIn: '7d' // Long-lived refresh token
     });
 };
 
@@ -142,15 +148,25 @@ const login = async (req, res) => {
         user.lastLogin = new Date();
         await user.save();
 
-        // Generate token
-        const token = generateToken(user.id);
+        // Generate tokens
+        const accessToken = generateToken(user.id);
+        const refreshToken = generateRefreshToken(user.id);
+
+        // Set refresh token as httpOnly cookie
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
         res.json({
             success: true,
             message: 'Login successful',
             data: {
                 user,
-                token
+                accessToken,
+                expiresIn: 15 * 60 // 15 minutes in seconds
             }
         });
     } catch (error) {
@@ -159,6 +175,72 @@ const login = async (req, res) => {
             success: false,
             message: 'Login failed',
             error: error.message
+        });
+    }
+};
+
+const refreshTokenEndpoint = async (req, res) => {
+    try {
+        const { refreshToken } = req.cookies;
+
+        if (!refreshToken) {
+            return res.status(401).json({
+                success: false,
+                message: 'Refresh token not provided'
+            });
+        }
+
+        // Verify refresh token
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+
+        // Get user
+        const user = await User.findByPk(decoded.id, {
+            include: [
+                { model: Role, as: 'role' },
+                { model: Position, as: 'position' }
+            ]
+        });
+
+        if (!user || !user.isActive) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid refresh token or user deactivated'
+            });
+        }
+
+        // Generate new access token
+        const newAccessToken = generateToken(user.id);
+
+        res.json({
+            success: true,
+            data: {
+                accessToken: newAccessToken,
+                expiresIn: 15 * 60 // 15 minutes in seconds
+            }
+        });
+    } catch (error) {
+        console.error('Refresh token error:', error);
+        res.status(401).json({
+            success: false,
+            message: 'Invalid refresh token'
+        });
+    }
+};
+
+const logout = async (req, res) => {
+    try {
+        // Clear refresh token cookie
+        res.clearCookie('refreshToken');
+
+        res.json({
+            success: true,
+            message: 'Logged out successfully'
+        });
+    } catch (error) {
+        console.error('Logout error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Logout failed'
         });
     }
 };
@@ -485,6 +567,8 @@ const changePassword = async (req, res) => {
 module.exports = {
     register,
     login,
+    refreshTokenEndpoint,
+    logout,
     forgotPassword,
     resetPassword,
     getProfile,
