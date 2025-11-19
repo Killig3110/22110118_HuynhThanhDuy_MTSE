@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, LogOut, User, Users, UserPlus, Home, Bell } from 'lucide-react';
+import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2 } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -18,9 +18,9 @@ const Navbar = () => {
                     <div className="flex items-center">
                         <Link to="/dashboard" className="flex-shrink-0 flex items-center">
                             <div className="h-8 w-8 bg-blue-600 rounded flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">L4</span>
+                                <span className="text-white font-bold text-sm">BM</span>
                             </div>
-                            <span className="ml-2 text-xl font-semibold text-gray-900">Lab04 App</span>
+                            <span className="ml-2 text-xl font-semibold text-gray-900">Building Management</span>
                         </Link>
 
                         {/* Navigation Links */}
@@ -31,6 +31,14 @@ const Navbar = () => {
                             >
                                 <Home className="h-4 w-4 mr-2" />
                                 Dashboard
+                            </Link>
+
+                            <Link
+                                to="/buildings"
+                                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                            >
+                                <Building2 className="h-4 w-4 mr-2" />
+                                Buildings
                             </Link>
 
                             {(user?.role?.name === 'Manager' || user?.role?.name === 'Admin') && (

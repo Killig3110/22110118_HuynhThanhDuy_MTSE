@@ -19,14 +19,26 @@ const schema = yup.object({
 
 const Login = () => {
     const [showPassword, setShowPassword] = useState(false);
+    const [showTestAccounts, setShowTestAccounts] = useState(false);
     const { login, isLoading } = useAuth();
     const navigate = useNavigate();
+
+    // Test accounts from seeder
+    const testAccounts = [
+        { email: 'admin@building.com', password: '123456', role: 'Admin' },
+        { email: 'blockmanager@building.com', password: '123456', role: 'Block Manager' },
+        { email: 'buildingmanager@building.com', password: '123456', role: 'Building Manager' },
+        { email: 'resident@building.com', password: '123456', role: 'Resident' },
+        { email: 'student@building.com', password: '123456', role: 'Student' },
+        { email: 'security@building.com', password: '123456', role: 'Security' }
+    ];
 
     const {
         register,
         handleSubmit,
         formState: { errors },
         setError,
+        setValue,
     } = useForm({
         resolver: yupResolver(schema),
     });
@@ -42,6 +54,11 @@ const Login = () => {
                 message: result.message || 'Login failed'
             });
         }
+    };
+
+    const handleTestLogin = (account) => {
+        setValue('email', account.email);
+        setValue('password', account.password);
     };
 
     return (
@@ -189,6 +206,51 @@ const Login = () => {
                     </form>
 
                     {/* Test Credentials */}
+                    <div className="mt-6">
+                        <button
+                            type="button"
+                            onClick={() => setShowTestAccounts(!showTestAccounts)}
+                            className="w-full text-sm text-blue-600 hover:text-blue-800 underline focus:outline-none"
+                        >
+                            {showTestAccounts ? 'Hide' : 'Show'} Test Accounts
+                        </button>
+
+                        {showTestAccounts && (
+                            <div className="mt-4 p-4 bg-gray-50 rounded-md border">
+                                <h3 className="text-sm font-medium text-gray-900 mb-3">Available Test Accounts:</h3>
+                                <div className="space-y-2">
+                                    {testAccounts.map((account, index) => (
+                                        <button
+                                            key={index}
+                                            type="button"
+                                            onClick={() => handleTestLogin(account)}
+                                            className="w-full text-left p-3 text-sm bg-white border border-gray-200 rounded hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                        >
+                                            <div className="font-medium text-gray-900">{account.role}</div>
+                                            <div className="text-gray-600">{account.email}</div>
+                                            <div className="text-xs text-gray-500">Password: {account.password}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                                <p className="mt-3 text-xs text-gray-500">
+                                    Click any account to auto-fill the login form
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Security Features Notice */}
+                        <div className="mt-6 p-4 bg-blue-50 rounded-md border border-blue-200">
+                            <h3 className="text-sm font-medium text-blue-900 mb-2 flex items-center">
+                                🔒 Security Features Implemented:
+                            </h3>
+                            <ul className="text-xs text-blue-800 space-y-1">
+                                <li>• <strong>Rate Limiting:</strong> Max 10 login attempts per 15 minutes</li>
+                                <li>• <strong>Input Validation:</strong> Email & password validation with sanitization</li>
+                                <li>• <strong>Authentication:</strong> JWT tokens with 15-minute expiry</li>
+                                <li>• <strong>Authorization:</strong> Role-based access control (6 user roles)</li>
+                            </ul>
+                        </div>
+                    </div>
                     <div className="mt-6 border-t border-gray-200 pt-6">
                         <div className="text-sm text-gray-600">
                             <p className="font-medium mb-2">Test Credentials:</p>

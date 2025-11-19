@@ -43,7 +43,6 @@ const User = sequelize.define('User', {
         type: DataTypes.STRING(20),
         allowNull: true,
         validate: {
-            isNumeric: true,
             len: [10, 20]
         }
     },
@@ -79,16 +78,36 @@ const User = sequelize.define('User', {
     resetPasswordExpires: {
         type: DataTypes.DATE,
         allowNull: true
+    },
+    
+    // Role and Position references (to be associated)
+    roleId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'Roles',
+            key: 'id'
+        }
+    },
+    positionId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'Positions',
+            key: 'id'
+        }
     }
 }, {
     hooks: {
         beforeCreate: async (user) => {
-            if (user.password) {
+            // Password should already be hashed in controller
+            // Only hash if it's still plain text
+            if (user.password && !user.password.startsWith('$2a$')) {
                 user.password = await bcrypt.hash(user.password, 12);
             }
         },
         beforeUpdate: async (user) => {
-            if (user.changed('password')) {
+            if (user.changed('password') && !user.password.startsWith('$2a$')) {
                 user.password = await bcrypt.hash(user.password, 12);
             }
         }

@@ -13,6 +13,7 @@ import Profile from './pages/Profile';
 import UserList from './pages/users/UserList';
 import UserCreate from './pages/users/UserCreate';
 import UserEdit from './pages/users/UserEdit';
+import BuildingList from './pages/buildings/BuildingList';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -158,6 +159,16 @@ function App() {
                             element={
                                 <ProtectedRoute requiredRole="Admin">
                                     <UserEdit />
+                                </ProtectedRoute>
+                            }
+                        />
+
+                        {/* Building Management Routes */}
+                        <Route
+                            path="/buildings"
+                            element={
+                                <ProtectedRoute>
+                                    <BuildingList />
                                 </ProtectedRoute>
                             }
                         />
