@@ -93,6 +93,21 @@ const Apartment = sequelize.define('Apartment', {
             min: 0
         }
     },
+    salePrice: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: true,
+        validate: {
+            min: 0
+        }
+    },
+    isListedForRent: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
+    isListedForSale: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    },
     maintenanceFee: {
         type: DataTypes.DECIMAL(10, 2),
         allowNull: false,

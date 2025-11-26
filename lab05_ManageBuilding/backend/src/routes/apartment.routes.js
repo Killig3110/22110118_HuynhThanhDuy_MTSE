@@ -1,6 +1,7 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 const {
+    searchApartments,
     getApartmentsByFloor,
     getApartmentById,
     createApartment,
@@ -62,7 +63,45 @@ const validateApartment = [
     handleValidationErrors
 ];
 
+// Search filters validation
+const validateSearchFilters = [
+    query('q').optional().trim().isLength({ max: 100 }).withMessage('Search term is too long'),
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be >= 1'),
+    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+    query('buildingId').optional().isInt().withMessage('Building ID must be a number'),
+    query('blockId').optional().isInt().withMessage('Block ID must be a number'),
+    query('floorId').optional().isInt().withMessage('Floor ID must be a number'),
+    query('minArea').optional().isFloat({ min: 0 }).withMessage('Min area must be positive'),
+    query('maxArea').optional().isFloat({ min: 0 }).withMessage('Max area must be positive'),
+    query('minRent').optional().isFloat({ min: 0 }).withMessage('Min rent must be positive'),
+    query('maxRent').optional().isFloat({ min: 0 }).withMessage('Max rent must be positive'),
+    query('bedrooms').optional().isInt({ min: 0 }).withMessage('Bedrooms must be a non-negative integer'),
+    query('bathrooms').optional().isInt({ min: 0 }).withMessage('Bathrooms must be a non-negative integer'),
+    query('hasParking').optional().isIn(['true', 'false']).withMessage('hasParking must be true or false'),
+    query('minPrice').optional().isFloat({ min: 0 }).withMessage('Min price must be positive'),
+    query('maxPrice').optional().isFloat({ min: 0 }).withMessage('Max price must be positive'),
+    query('isListedForRent').optional().isIn(['true', 'false']).withMessage('isListedForRent must be boolean'),
+    query('isListedForSale').optional().isIn(['true', 'false']).withMessage('isListedForSale must be boolean'),
+    query('sortBy').optional().isIn(['apartmentNumber', 'monthlyRent', 'area', 'bedrooms', 'bathrooms', 'createdAt', 'updatedAt'])
+        .withMessage('Invalid sortBy value'),
+    query('sortOrder').optional().isIn(['ASC', 'DESC', 'asc', 'desc'])
+        .withMessage('Invalid sortOrder value'),
+    handleValidationErrors
+];
+
 // Routes
+
+/**
+ * @route   GET /api/apartments/search
+ * @desc    Fuzzy search + filter apartments
+ * @access  Protected
+ */
+router.get('/search',
+    generalLimiter,
+    authMiddleware,
+    validateSearchFilters,
+    searchApartments
+);
 
 /**
  * @route   GET /api/apartments/:id

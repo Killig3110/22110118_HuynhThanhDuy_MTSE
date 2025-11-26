@@ -17,6 +17,9 @@ import {
     XMarkIcon,
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
+import { searchAPI, leaseAPI } from '../../services/api';
+import api from '../../services/api';
+import { useAuth } from '../../contexts/AuthContext';
 import '../../styles/InteractiveBuildingMap.css';
 
 // Add CSS styles for 3D effects
@@ -52,6 +55,7 @@ if (typeof document !== 'undefined') {
 }
 
 const InteractiveBuildingMap = () => {
+    const { user } = useAuth();
     const [blocks, setBlocks] = useState([]);
     const [selectedBlock, setSelectedBlock] = useState(null);
     const [selectedBuilding, setSelectedBuilding] = useState(null);
@@ -166,7 +170,7 @@ const InteractiveBuildingMap = () => {
             setLoading(true);
             const token = localStorage.getItem('token');
 
-            const response = await fetch(`http://localhost:5001/api/floors/${floorId}/apartments`, {
+            const response = await fetch(`http://localhost:5001/api/buildings/floors/${floorId}/apartments`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -209,6 +213,65 @@ const InteractiveBuildingMap = () => {
         setApartments([]);
         fetchApartmentsByFloor(floor.id);
     };
+
+    // Debounced search across current level (block -> building -> floor -> apartment)
+    useEffect(() => {
+        const run = async () => {
+            const term = searchQuery.trim();
+            if (!term) {
+                // Reset lists to full data for the current level
+                if (!selectedBlock) {
+                    fetchBlocks();
+                } else if (selectedBlock && !selectedBuilding) {
+                    fetchBuildingsByBlock(selectedBlock.id);
+                } else if (selectedBuilding && !selectedFloor) {
+                    fetchFloorsByBuilding(selectedBuilding.id);
+                } else if (selectedFloor) {
+                    fetchApartmentsByFloor(selectedFloor.id);
+                }
+                return;
+            }
+
+            try {
+                setLoading(true);
+                const baseParams = { q: term, limit: 20 };
+
+                if (!selectedBlock) {
+                    const { data } = await searchAPI.searchAll({ ...baseParams, types: 'blocks' });
+                    setBlocks(data.data?.blocks || []);
+                    setBuildings([]);
+                    setFloors([]);
+                    setApartments([]);
+                    return;
+                }
+
+                if (selectedBlock && !selectedBuilding) {
+                    const { data } = await searchAPI.searchAll({ ...baseParams, types: 'buildings', blockId: selectedBlock.id });
+                    setBuildings(data.data?.buildings || []);
+                    return;
+                }
+
+                if (selectedBuilding && !selectedFloor) {
+                    const { data } = await searchAPI.searchAll({ ...baseParams, types: 'floors', buildingId: selectedBuilding.id });
+                    setFloors(data.data?.floors || []);
+                    return;
+                }
+
+                if (selectedFloor) {
+                    const { data } = await searchAPI.searchAll({ ...baseParams, types: 'apartments', floorId: selectedFloor.id });
+                    setApartments(data.data?.apartments || []);
+                }
+            } catch (error) {
+                console.error('Search failed', error);
+                toast.error('Search failed');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const handler = setTimeout(run, 300);
+        return () => clearTimeout(handler);
+    }, [searchQuery, selectedBlock, selectedBuilding, selectedFloor]);
 
     const renderBreadcrumbs = () => (
         <div className="flex items-center space-x-2 text-sm text-gray-600 mb-6">
@@ -466,6 +529,8 @@ const InteractiveBuildingMap = () => {
                             searchQuery={searchQuery}
                             filterStatus={filterStatus}
                             filterType={filterType}
+                            user={user}
+                            onRefresh={() => fetchApartmentsByFloor(selectedFloor.id)}
                         />
                     )}
                 </div>
@@ -840,8 +905,8 @@ const BuildingsView = ({ buildings = [], selectedBlock, onBuildingSelect, viewMo
                                                     <div
                                                         key={i}
                                                         className={`rounded-sm border border-yellow-400/50 transition-all duration-300 ${Math.random() > 0.3
-                                                                ? 'bg-gradient-to-br from-yellow-200 to-yellow-400 shadow-sm'
-                                                                : 'bg-gray-700/50'
+                                                            ? 'bg-gradient-to-br from-yellow-200 to-yellow-400 shadow-sm'
+                                                            : 'bg-gray-700/50'
                                                             }`}
                                                         style={{
                                                             height: '6px',
@@ -1217,7 +1282,7 @@ const FloorCard = ({ floor, onSelect }) => (
 );
 
 // Enhanced Apartments View Component with Filtering
-const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all' }) => {
+const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all', user, onRefresh }) => {
     console.log('ApartmentsView render with apartments:', apartments, 'selectedFloor:', selectedFloor);
 
     if (!apartments || apartments.length === 0) {
@@ -1251,11 +1316,17 @@ const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery 
                 <h2 className="text-2xl font-bold mb-6">Apartments on Floor {selectedFloor.floorNumber}</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredApartments.map(apartment => (
-                        <EnhancedApartmentCard
-                            key={apartment.id}
-                            apartment={apartment}
-                            onClick={() => handleApartmentClick(apartment)}
-                        />
+                        <div key={apartment.id} className="space-y-2">
+                            <EnhancedApartmentCard
+                                apartment={apartment}
+                                onClick={() => handleApartmentClick(apartment)}
+                            />
+                            <ApartmentActions
+                                apartment={apartment}
+                                user={user}
+                                onRefresh={onRefresh}
+                            />
+                        </div>
                     ))}
                 </div>
                 {/* Apartment Details Modal */}
@@ -1495,6 +1566,103 @@ const EnhancedApartmentCard = ({ apartment, onClick }) => (
         <div className="absolute bottom-0 left-0 w-20 h-20 bg-white opacity-5 rounded-full transform -translate-x-10 translate-y-10"></div>
     </div>
 );
+
+// Actions for rent/buy + listing toggle
+const ApartmentActions = ({ apartment, user, onRefresh }) => {
+    const role = user?.role?.name;
+    const isOwner = user?.id && apartment.ownerId === user.id;
+    const isManager = ['admin', 'building_manager'].includes(role);
+    const canList = isOwner || isManager;
+    const canRequest = !!user;
+
+    const updateListing = async (type, enable) => {
+        try {
+            const payload = {};
+            if (type === 'rent') {
+                payload.isListedForRent = enable;
+                if (enable) {
+                    const price = window.prompt('Nhập giá thuê / tháng', apartment.monthlyRent || '');
+                    if (!price) return;
+                    payload.monthlyRent = Number(price);
+                }
+            } else {
+                payload.isListedForSale = enable;
+                if (enable) {
+                    const price = window.prompt('Nhập giá bán', apartment.salePrice || '');
+                    if (!price) return;
+                    payload.salePrice = Number(price);
+                }
+            }
+            await api.put(`/apartments/${apartment.id}`, payload);
+            toast.success('Cập nhật listing thành công');
+            onRefresh?.();
+        } catch (error) {
+            console.error('Listing update failed', error);
+            toast.error(error.response?.data?.message || 'Listing update failed');
+        }
+    };
+
+    const createRequest = async (type) => {
+        try {
+            const payload = {
+                apartmentId: apartment.id,
+                type
+            };
+            if (type === 'rent') {
+                payload.monthlyRent = apartment.monthlyRent;
+            } else {
+                payload.totalPrice = apartment.salePrice;
+            }
+            const note = window.prompt('Ghi chú cho yêu cầu', '');
+            if (note !== null) payload.note = note;
+            await leaseAPI.create(payload);
+            toast.success('Đã gửi yêu cầu');
+        } catch (error) {
+            console.error('Create lease request failed', error);
+            toast.error(error.response?.data?.message || 'Create lease request failed');
+        }
+    };
+
+    return (
+        <div className="border border-gray-200 rounded-lg p-3 bg-white shadow-sm">
+            <div className="flex flex-wrap gap-2">
+                {apartment.isListedForRent && canRequest && (
+                    <button
+                        onClick={() => createRequest('rent')}
+                        className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
+                    >
+                        Request Rent
+                    </button>
+                )}
+                {apartment.isListedForSale && canRequest && (
+                    <button
+                        onClick={() => createRequest('buy')}
+                        className="px-3 py-1 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                    >
+                        Request Buy
+                    </button>
+                )}
+
+                {canList && (
+                    <>
+                        <button
+                            onClick={() => updateListing('rent', !apartment.isListedForRent)}
+                            className="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                        >
+                            {apartment.isListedForRent ? 'Unlist Rent' : 'List for Rent'}
+                        </button>
+                        <button
+                            onClick={() => updateListing('sale', !apartment.isListedForSale)}
+                            className="px-3 py-1 text-sm bg-gray-100 text-gray-800 rounded hover:bg-gray-200"
+                        >
+                            {apartment.isListedForSale ? 'Unlist Sale' : 'List for Sale'}
+                        </button>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
 
 // Apartment Details Modal Component
 const ApartmentDetailsModal = ({ apartment, onClose }) => (

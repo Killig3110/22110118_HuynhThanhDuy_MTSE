@@ -11,15 +11,15 @@ const {
     Apartment,
     HouseholdMember,
     Facility,
+    LeaseRequest,
 } = require('../models');
 
 /**
  * Tạo database nếu chưa tồn tại
  */
 async function createDatabase() {
-    // Tạo connection tạm không gắn với DB cụ thể
     const tempConnection = new Sequelize(
-        '', // No database specified
+        '',
         process.env.DB_USERNAME || 'root',
         process.env.DB_PASSWORD || '1234',
         {
@@ -57,9 +57,8 @@ async function seedDatabase() {
 
         // 2. Sync database (create tables)
         console.log('🔄 Syncing database (force: true)...');
-        // Disable foreign key checks temporarily
         await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
-        await sequelize.sync({ force: true }); // drop + recreate all tables
+        await sequelize.sync({ force: true });
         await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
         console.log('✅ Database synced successfully');
 
@@ -73,254 +72,327 @@ async function seedDatabase() {
             { name: 'technician', description: 'Bảo trì kỹ thuật' },
             { name: 'accountant', description: 'Quản lý tài chính' },
         ]);
+        const roleMap = roles.reduce((acc, role) => {
+            acc[role.name] = role;
+            return acc;
+        }, {});
 
         // 4. Seed Positions
         console.log('💼 Creating positions...');
         const positions = await Position.bulkCreate([
-            {
-                title: 'System Administrator',
-                department: 'IT',
-                description: 'Quản trị hệ thống chung',
-            },
-            {
-                title: 'Block Manager',
-                department: 'Management',
-                description: 'Quản lý toàn bộ block',
-            },
-            {
-                title: 'Building Manager',
-                department: 'Management',
-                description: 'Quản lý từng tòa nhà',
-            },
-            {
-                title: 'Head of Security',
-                department: 'Security',
-                description: 'Trưởng bộ phận an ninh',
-            },
-            {
-                title: 'Senior Technician',
-                department: 'Maintenance',
-                description: 'Kỹ thuật viên cao cấp',
-            },
-            {
-                title: 'Chief Accountant',
-                department: 'Finance',
-                description: 'Kế toán trưởng',
-            },
-            {
-                title: 'Resident',
-                department: 'Residential',
-                description: 'Cư dân',
-            },
+            { title: 'System Administrator', department: 'IT', description: 'Quản trị hệ thống chung' },
+            { title: 'Block Manager', department: 'Management', description: 'Quản lý toàn bộ block' },
+            { title: 'Building Manager', department: 'Management', description: 'Quản lý từng tòa nhà' },
+            { title: 'Head of Security', department: 'Security', description: 'Trưởng bộ phận an ninh' },
+            { title: 'Senior Technician', department: 'Maintenance', description: 'Kỹ thuật viên cao cấp' },
+            { title: 'Chief Accountant', department: 'Finance', description: 'Kế toán trưởng' },
+            { title: 'Resident', department: 'Residential', description: 'Cư dân' },
         ]);
+        const positionMap = positions.reduce((acc, position) => {
+            acc[position.title] = position;
+            return acc;
+        }, {});
 
-        // 5. Create sample users
+        // 5. Create users (more residents + managers for multiple blocks/buildings)
         console.log('👥 Creating users...');
         const hashedPassword = await bcrypt.hash('123456', 10);
 
-        const users = await User.bulkCreate([
+        const coreUsersPayload = [
             {
                 email: 'admin@building.com',
-                password: hashedPassword,
                 firstName: 'System',
                 lastName: 'Admin',
                 phone: '0900000001',
-                roleId: roles[0].id, // admin
-                positionId: positions[0].id,
-                isActive: true,
+                roleId: roleMap.admin.id,
+                positionId: positionMap['System Administrator'].id,
             },
             {
                 email: 'blockmanager@building.com',
-                password: hashedPassword,
                 firstName: 'Nguyễn',
                 lastName: 'Văn Quản',
                 phone: '0900000002',
-                roleId: roles[1].id, // building_manager
-                positionId: positions[1].id,
-                isActive: true,
+                roleId: roleMap.building_manager.id,
+                positionId: positionMap['Block Manager'].id,
             },
             {
                 email: 'buildingmanager@building.com',
-                password: hashedPassword,
                 firstName: 'Trần',
                 lastName: 'Thị Lan',
                 phone: '0900000003',
-                roleId: roles[1].id, // building_manager
-                positionId: positions[2].id,
-                isActive: true,
+                roleId: roleMap.building_manager.id,
+                positionId: positionMap['Building Manager'].id,
             },
             {
                 email: 'resident@building.com',
-                password: hashedPassword,
                 firstName: 'Lê',
                 lastName: 'Văn Dân',
                 phone: '0900000004',
-                roleId: roles[2].id, // resident
-                positionId: positions[6].id,
-                isActive: true,
+                roleId: roleMap.resident.id,
+                positionId: positionMap.Resident.id,
             },
             {
                 email: 'security@building.com',
-                password: hashedPassword,
                 firstName: 'Phạm',
                 lastName: 'Văn An',
                 phone: '0900000005',
-                roleId: roles[3].id, // security
-                positionId: positions[3].id,
-                isActive: true,
+                roleId: roleMap.security.id,
+                positionId: positionMap['Head of Security'].id,
             },
             {
                 email: 'student@building.com',
-                password: hashedPassword,
                 firstName: 'Huỳnh',
                 lastName: 'Thành Duy',
                 phone: '0900000006',
-                roleId: roles[2].id, // resident
-                positionId: positions[6].id,
-                isActive: true,
+                roleId: roleMap.resident.id,
+                positionId: positionMap.Resident.id,
             },
-        ]);
-
-        // 6. Create Block S
-        console.log('🏢 Creating block...');
-        const blockS = await Block.create({
-            name: 'Khu S',
-            blockCode: 'S',
-            location: '268 Lý Thường Kiệt, Quận 10, TP.HCM',
-            totalBuildings: 10,
-            description: 'Khu chung cư sinh viên S',
-            managerId: users[1].id, // Block Manager
+            {
+                email: 'blockmanagerA@building.com',
+                firstName: 'Đặng',
+                lastName: 'Thu Quản',
+                phone: '0900000007',
+                roleId: roleMap.building_manager.id,
+                positionId: positionMap['Block Manager'].id,
+            },
+            {
+                email: 'blockmanagerB@building.com',
+                firstName: 'Phan',
+                lastName: 'Hoài Quản',
+                phone: '0900000008',
+                roleId: roleMap.building_manager.id,
+                positionId: positionMap['Block Manager'].id,
+            },
+            {
+                email: 'buildingmanagerA@building.com',
+                firstName: 'Bùi',
+                lastName: 'Ngọc Lan',
+                phone: '0900000009',
+                roleId: roleMap.building_manager.id,
+                positionId: positionMap['Building Manager'].id,
+            },
+            {
+                email: 'buildingmanagerB@building.com',
+                firstName: 'Lâm',
+                lastName: 'Hải Đăng',
+                phone: '0900000010',
+                roleId: roleMap.building_manager.id,
+                positionId: positionMap['Building Manager'].id,
+            },
+            {
+                email: 'accountant@building.com',
+                firstName: 'Trịnh',
+                lastName: 'Thu Ngân',
+                phone: '0900000011',
+                roleId: roleMap.accountant.id,
+                positionId: positionMap['Chief Accountant'].id,
+            },
+        ].map((user) => ({
+            ...user,
+            password: hashedPassword,
             isActive: true,
+        }));
+
+        const residentPayload = Array.from({ length: 12 }).map((_, idx) => ({
+            email: `resident${idx + 1}@building.com`,
+            firstName: 'Cư',
+            lastName: `Dân ${idx + 1}`,
+            phone: `09010000${(idx + 1).toString().padStart(2, '0')}`,
+            roleId: roleMap.resident.id,
+            positionId: positionMap.Resident.id,
+            password: hashedPassword,
+            isActive: true,
+        }));
+
+        const users = await User.bulkCreate([...coreUsersPayload, ...residentPayload]);
+        const userByEmail = (await User.findAll({
+            where: { email: [...coreUsersPayload, ...residentPayload].map((u) => u.email) }
+        })).reduce((acc, user) => {
+            acc[user.email] = user;
+            return acc;
+        }, {});
+
+        // 6. Create multiple blocks (A, B, S)
+        console.log('🏢 Creating blocks A/B/S...');
+        const blockConfigs = [
+            {
+                name: 'Khu A',
+                blockCode: 'A',
+                location: '12 Nguyễn Huệ, Quận 1, TP.HCM',
+                totalBuildings: 3,
+                description: 'Khu cao cấp trung tâm',
+                managerId: userByEmail['blockmanagerA@building.com']?.id || users[1].id,
+            },
+            {
+                name: 'Khu B',
+                blockCode: 'B',
+                location: '45 Lê Văn Việt, Thủ Đức, TP.HCM',
+                totalBuildings: 3,
+                description: 'Khu tiện ích gia đình',
+                managerId: userByEmail['blockmanagerB@building.com']?.id || users[1].id,
+            },
+            {
+                name: 'Khu S',
+                blockCode: 'S',
+                location: '268 Lý Thường Kiệt, Quận 10, TP.HCM',
+                totalBuildings: 4,
+                description: 'Khu chung cư sinh viên S',
+                managerId: userByEmail['blockmanager@building.com']?.id || users[1].id,
+            },
+        ];
+
+        const blocks = await Block.bulkCreate(blockConfigs, { returning: true });
+        const blockByCode = {};
+        blocks.forEach((block) => {
+            blockByCode[block.blockCode] = block;
         });
 
-        // 7. Create Buildings S.01 to S.10
-        console.log('🏗️ Creating buildings (S.01 - S.10)...');
+        // 7. Create buildings for each block
+        console.log('🏗️ Creating buildings for A/B/S...');
+        const buildingConfigs = [
+            { blockCode: 'A', count: 3, managerEmail: 'buildingmanagerA@building.com' },
+            { blockCode: 'B', count: 3, managerEmail: 'buildingmanagerB@building.com' },
+            { blockCode: 'S', count: 4, managerEmail: 'buildingmanager@building.com' },
+        ];
+
         const buildings = [];
-        for (let i = 1; i <= 10; i++) {
-            const buildingCode = `S.${i.toString().padStart(2, '0')}`;
-            const building = await Building.create({
-                name: `Tòa nhà ${buildingCode}`,
-                blockId: blockS.id,
-                buildingCode: buildingCode,
-                address: `268 Lý Thường Kiệt, Tòa ${buildingCode}`,
-                city: 'TP.HCM',
-                state: 'TP.HCM',
-                zipCode: '700000',
-                totalFloors: 20,
-                constructionYear: 2020,
-                managerId: users[2].id, // Building Manager
-                description: `Tòa nhà sinh viên ${buildingCode}`,
-                status: 'active',
-                amenities: ['parking', 'elevator', 'security'],
-                isActive: true,
-            });
-            buildings.push(building);
+        for (const config of buildingConfigs) {
+            const block = blockByCode[config.blockCode];
+            for (let i = 1; i <= config.count; i++) {
+                const buildingCode = `${config.blockCode}.${i.toString().padStart(2, '0')}`;
+                const building = await Building.create({
+                    name: `Tòa nhà ${buildingCode}`,
+                    blockId: block.id,
+                    buildingCode,
+                    address: `${block.location} - ${buildingCode}`,
+                    city: 'TP.HCM',
+                    state: 'TP.HCM',
+                    zipCode: '700000',
+                    totalFloors: 12,
+                    constructionYear: 2019 + i,
+                    managerId: userByEmail[config.managerEmail]?.id || userByEmail['buildingmanager@building.com']?.id,
+                    description: `Tòa ${buildingCode} với tiện ích hiện đại`,
+                    status: 'active',
+                    amenities: ['parking', 'elevator', 'security', 'wifi'],
+                    isActive: true,
+                });
+                buildings.push(building);
+            }
         }
 
-        // 8. Create Floors for Building S.01 (sample)
-        console.log('🏢 Creating floors for S.01...');
+        // 8. Create floors for each building (6 floors to diversify data)
+        console.log('🏢 Creating floors for all buildings...');
         const floors = [];
-        for (let floorNumber = 1; floorNumber <= 20; floorNumber++) {
-            const floor = await Floor.create({
-                buildingId: buildings[0].id, // S.01
-                floorNumber,
-                totalApartments: 8,
-                floorPlan: `Bố trí mặt bằng tầng ${floorNumber}`,
-                isActive: true,
-            });
-            floors.push(floor);
+        const floorsPerBuilding = 6;
+        for (const building of buildings) {
+            for (let floorNumber = 1; floorNumber <= floorsPerBuilding; floorNumber++) {
+                const floor = await Floor.create({
+                    buildingId: building.id,
+                    floorNumber,
+                    totalApartments: 6,
+                    floorPlan: `Bố trí mặt bằng ${building.buildingCode} - tầng ${floorNumber}`,
+                    isActive: true,
+                });
+                floors.push(floor);
+            }
         }
 
-        // 9. Create Apartments for Floor 1-3 of S.01 (sample)
-        console.log('🏠 Creating sample apartments (floors 1-3 of S.01)...');
+        // 9. Create apartments for each floor
+        console.log('🏠 Creating apartments for each floor...');
         const apartments = [];
-        for (let floorIndex = 0; floorIndex < 3; floorIndex++) {
-            const floor = floors[floorIndex];
-            for (let aptNumber = 1; aptNumber <= 8; aptNumber++) {
-                const apartmentNumber = `${(floorIndex + 1)
-                    .toString()
-                    .padStart(2, '0')}${aptNumber.toString().padStart(2, '0')}`;
+        const apartmentsPerFloor = 6;
+        const statusCycle = ['occupied', 'vacant', 'for_rent', 'for_sale', 'under_renovation'];
+
+        for (const floor of floors) {
+            for (let aptNumber = 1; aptNumber <= apartmentsPerFloor; aptNumber++) {
+                const apartmentNumber = `${floor.floorNumber.toString().padStart(2, '0')}${aptNumber.toString().padStart(2, '0')}`;
+                const status = statusCycle[(floor.floorNumber + aptNumber) % statusCycle.length];
+
                 const apartment = await Apartment.create({
                     apartmentNumber,
                     floorId: floor.id,
-                    type: '2bhk',
-                    area: 65.5,
-                    bedrooms: 2,
-                    bathrooms: 2,
-                    balconies: 1,
-                    parkingSlots: 0,
-                    monthlyRent: 3500000,
-                    maintenanceFee: 0,
-                    status:
-                        floorIndex === 0 && aptNumber <= 3 ? 'occupied' : 'vacant',
+                    type: ['1bhk', '2bhk', '3bhk', 'studio'][aptNumber % 4],
+                    area: 45 + floor.floorNumber * 3 + aptNumber,
+                    bedrooms: (aptNumber % 3) + 1,
+                    bathrooms: (aptNumber % 2) + 1,
+                    balconies: aptNumber % 2,
+                    parkingSlots: aptNumber % 3 === 0 ? 1 : 0,
+                    monthlyRent: 3000000 + floor.floorNumber * 50000 + aptNumber * 25000,
+                    maintenanceFee: 150000 + aptNumber * 5000,
+                    status,
+                    description: `Căn hộ ${apartmentNumber} tại tầng ${floor.floorNumber}`,
                     isActive: true,
                 });
                 apartments.push(apartment);
             }
         }
 
-        // 10. Create Household Members for occupied apartments
-        console.log('👨‍👩‍👧‍👦 Creating household members...');
-        const occupiedApartments = apartments.filter(
-            (apt) => apt.status === 'occupied',
-        );
-
-        for (const apt of occupiedApartments) {
-            if (apt.apartmentNumber === '0101') {
-                // Resident account: resident@building.com
-                await HouseholdMember.create({
-                    apartmentId: apt.id,
-                    firstName: 'Lê',
-                    lastName: 'Văn Dân',
-                    relationship: 'owner',
-                    dateOfBirth: '1985-03-15',
-                    phoneNumber: '0900000004',
-                    email: 'resident@building.com',
-                    moveInDate: '2023-09-01',
-                    isActive: true,
-                });
-            } else if (apt.apartmentNumber === '0102') {
-                // Student account: student@building.com
-                await HouseholdMember.create({
-                    apartmentId: apt.id,
-                    firstName: 'Huỳnh',
-                    lastName: 'Thành Duy',
-                    relationship: 'tenant',
-                    dateOfBirth: '2001-08-20',
-                    phoneNumber: '0900000006',
-                    email: 'student@building.com',
-                    moveInDate: '2024-01-15',
-                    isActive: true,
-                });
-            } else {
-                // Generic resident
-                await HouseholdMember.create({
-                    apartmentId: apt.id,
-                    firstName: 'Cu',
-                    lastName: `Dan ${apt.apartmentNumber}`,
-                    relationship: 'owner',
-                    dateOfBirth: '1990-01-01',
-                    phoneNumber: `090000${apt.apartmentNumber}`,
-                    moveInDate: '2023-09-01',
-                    isActive: true,
-                });
+        // Sample lease requests
+        console.log('📝 Creating sample lease requests...');
+        const sampleLease = await LeaseRequest.bulkCreate([
+            {
+                apartmentId: apartments[0]?.id,
+                userId: userByEmail['resident@building.com']?.id || users[3].id,
+                type: 'rent',
+                status: 'pending_manager',
+                startDate: '2024-12-01',
+                monthlyRent: apartments[0]?.monthlyRent || 3200000,
+                note: 'Muốn thuê 12 tháng'
+            },
+            {
+                apartmentId: apartments[1]?.id,
+                userId: userByEmail['student@building.com']?.id || users[5].id,
+                type: 'buy',
+                status: 'pending_manager',
+                totalPrice: 1500000000,
+                note: 'Đề nghị mua căn này'
             }
+        ]);
+
+        // 10. Create Household Members for a subset of apartments
+        console.log('👨‍👩‍👧‍👦 Creating household members...');
+        const sampleNames = [
+            ['Lê', 'Minh'],
+            ['Trần', 'Khánh'],
+            ['Nguyễn', 'Hòa'],
+            ['Phạm', 'Hạnh'],
+            ['Huỳnh', 'Nam'],
+            ['Võ', 'Anh'],
+            ['Bùi', 'Trang'],
+            ['Đinh', 'Thiện'],
+            ['Phan', 'Yến'],
+            ['Trương', 'Tú'],
+        ];
+
+        const occupiedAndRent = apartments.filter((apt) => ['occupied', 'for_rent'].includes(apt.status));
+        let phoneSeed = 910000000;
+        for (let i = 0; i < occupiedAndRent.length && i < 80; i++) {
+            const apt = occupiedAndRent[i];
+            const name = sampleNames[i % sampleNames.length];
+
+            await HouseholdMember.create({
+                apartmentId: apt.id,
+                firstName: name[1],
+                lastName: name[0],
+                relationship: i % 3 === 0 ? 'owner' : 'tenant',
+                dateOfBirth: `199${i % 10}-0${(i % 9) + 1}-15`,
+                phoneNumber: `0${phoneSeed + i}`,
+                email: i % 4 === 0 ? `hhmember${i + 1}@building.com` : null,
+                moveInDate: '2023-09-01',
+                isActive: true,
+            });
         }
 
         // 11. Create Block Facilities
         console.log('🏊‍♂️ Creating block facilities...');
         const facilities = await Facility.bulkCreate([
             {
-                blockId: blockS.id,
+                blockId: blockByCode['S'].id,
                 name: 'Hồ bơi',
                 type: 'swimming_pool',
                 location: 'Tầng trệt, Khu trung tâm',
                 description: 'Hồ bơi tiêu chuẩn Olympic',
                 capacity: 50,
-                operatingHours: {
-                    open: '06:00',
-                    close: '22:00',
-                },
+                operatingHours: { open: '06:00', close: '22:00' },
                 bookingRequired: true,
                 advanceBookingDays: 7,
                 bookingFee: 50000,
@@ -328,16 +400,13 @@ async function seedDatabase() {
                 isActive: true,
             },
             {
-                blockId: blockS.id,
+                blockId: blockByCode['A'].id,
                 name: 'Phòng Gym',
                 type: 'gym',
                 location: 'Tầng 2, Khu trung tâm',
                 description: 'Phòng tập gym với đầy đủ thiết bị',
                 capacity: 30,
-                operatingHours: {
-                    open: '05:00',
-                    close: '23:00',
-                },
+                operatingHours: { open: '05:00', close: '23:00' },
                 bookingRequired: false,
                 advanceBookingDays: 0,
                 bookingFee: 0,
@@ -345,16 +414,13 @@ async function seedDatabase() {
                 isActive: true,
             },
             {
-                blockId: blockS.id,
+                blockId: blockByCode['B'].id,
                 name: 'Sân tennis',
                 type: 'sports_court',
                 location: 'Sân thượng',
                 description: 'Sân tennis chuyên nghiệp',
                 capacity: 4,
-                operatingHours: {
-                    open: '06:00',
-                    close: '22:00',
-                },
+                operatingHours: { open: '06:00', close: '22:00' },
                 bookingRequired: true,
                 advanceBookingDays: 3,
                 bookingFee: 100000,
@@ -362,16 +428,13 @@ async function seedDatabase() {
                 isActive: true,
             },
             {
-                blockId: blockS.id,
+                blockId: blockByCode['S'].id,
                 name: 'Phòng họp cư dân',
                 type: 'conference_room',
                 location: 'Tầng 1, Tòa S.01',
                 description: 'Phòng họp lớn cho cư dân',
                 capacity: 100,
-                operatingHours: {
-                    open: '08:00',
-                    close: '22:00',
-                },
+                operatingHours: { open: '08:00', close: '22:00' },
                 bookingRequired: true,
                 advanceBookingDays: 7,
                 bookingFee: 200000,
@@ -385,21 +448,23 @@ async function seedDatabase() {
         console.log('\n📊 Summary:');
         console.log(`- ${roles.length} roles created`);
         console.log(`- ${positions.length} positions created`);
-        console.log(`- ${users.length} users created`);
-        console.log(`- 1 block created (Block S)`);
-        console.log(`- ${buildings.length} buildings created (S.01 - S.10)`);
-        console.log(`- ${floors.length} floors created (for S.01)`);
-        console.log(`- ${apartments.length} apartments created (sample)`);
-        console.log(`- ${occupiedApartments.length} household members created`);
+        console.log(`- ${users.length} users created (including managers & residents)`);
+        console.log(`- ${blocks.length} blocks created (A/B/S)`);
+        console.log(`- ${buildings.length} buildings created`);
+        console.log(`- ${floors.length} floors created`);
+        console.log(`- ${apartments.length} apartments created`);
+        console.log(`- ${Math.min(occupiedAndRent.length, 80)} household members created`);
         console.log(`- ${facilities.length} facilities created`);
 
         console.log('\n🔐 Test Accounts:');
-        console.log('Admin:           admin@building.com          / 123456');
-        console.log('Block Manager:   blockmanager@building.com   / 123456');
-        console.log('BuildingManager: buildingmanager@building.com/ 123456');
-        console.log('Resident:        resident@building.com       / 123456');
-        console.log('Student:         student@building.com        / 123456');
-        console.log('Security:        security@building.com       / 123456');
+        console.log('Admin:             admin@building.com          / 123456');
+        console.log('Block Manager A:   blockmanagerA@building.com  / 123456');
+        console.log('Block Manager B:   blockmanagerB@building.com  / 123456');
+        console.log('Block Manager S:   blockmanager@building.com   / 123456');
+        console.log('Building Manager S: buildingmanager@building.com / 123456');
+        console.log('Resident:          resident@building.com       / 123456');
+        console.log('Student:           student@building.com        / 123456');
+        console.log('Security:          security@building.com       / 123456');
     } catch (error) {
         console.error('❌ Seeding failed:', error);
         throw error;

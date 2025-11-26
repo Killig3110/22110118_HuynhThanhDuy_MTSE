@@ -12,6 +12,7 @@ const Visitor = require('./Visitor');
 const Facility = require('./Facility');
 const FacilityBooking = require('./FacilityBooking');
 const Announcement = require('./Announcement');
+const LeaseRequest = require('./LeaseRequest');
 
 // User associations (existing)
 User.belongsTo(Role, {
@@ -186,6 +187,34 @@ User.hasMany(Visitor, {
     as: 'registeredVisitors'
 });
 
+// Lease requests
+LeaseRequest.belongsTo(Apartment, {
+    foreignKey: 'apartmentId',
+    as: 'apartment'
+});
+Apartment.hasMany(LeaseRequest, {
+    foreignKey: 'apartmentId',
+    as: 'leaseRequests'
+});
+
+LeaseRequest.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'requester'
+});
+User.hasMany(LeaseRequest, {
+    foreignKey: 'userId',
+    as: 'leaseRequests'
+});
+
+LeaseRequest.belongsTo(User, {
+    foreignKey: 'decisionBy',
+    as: 'approver'
+});
+User.hasMany(LeaseRequest, {
+    foreignKey: 'decisionBy',
+    as: 'decidedLeaseRequests'
+});
+
 // Facility associations
 Facility.belongsTo(Block, {
     foreignKey: 'blockId',
@@ -275,5 +304,6 @@ module.exports = {
     Visitor,
     Facility,
     FacilityBooking,
-    Announcement
+    Announcement,
+    LeaseRequest
 };
