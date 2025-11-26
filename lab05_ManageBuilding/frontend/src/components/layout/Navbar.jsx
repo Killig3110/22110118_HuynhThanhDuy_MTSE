@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin } from 'lucide-react';
+import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin, Search, ClipboardList, ShoppingBag, HomeIcon } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
+    const mainLinks = useMemo(() => ([
+        { to: '/dashboard', label: 'Dashboard', icon: Home, show: true },
+        { to: '/buildings', label: 'Buildings', icon: Building2, show: true },
+        { to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true },
+        { to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true },
+        { to: '/search', label: 'Search', icon: Search, show: true },
+        { to: '/leases', label: 'Leases', icon: ClipboardList, show: true },
+        { to: '/my-requests', label: 'My Requests', icon: ClipboardList, show: !!user },
+        { to: '/my-apartments', label: 'My Apartments', icon: HomeIcon, show: !!user },
+        { to: '/residents', label: 'Residents', icon: Users, show: ['admin', 'building_manager'].includes(user?.role?.name) },
+        { to: '/management', label: 'User Management', icon: UserPlus, show: user?.role?.name === 'admin' },
+    ]), [user]);
 
     const handleLogout = () => {
         logout();
@@ -24,49 +36,39 @@ const Navbar = () => {
                         </Link>
 
                         {/* Navigation Links */}
-                        <div className="hidden md:ml-6 md:flex md:space-x-8">
-                            <Link
-                                to="/dashboard"
-                                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
-                            >
-                                <Home className="h-4 w-4 mr-2" />
-                                Dashboard
-                            </Link>
-
-                            <Link
-                                to="/buildings"
-                                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                            >
-                                <Building2 className="h-4 w-4 mr-2" />
-                                Buildings
-                            </Link>
-
-                            <Link
-                                to="/buildings/map"
-                                className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                            >
-                                <MapPin className="h-4 w-4 mr-2" />
-                                Interactive Map
-                            </Link>
-
-                            {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (
-                                <Link
-                                    to="/residents"
-                                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                                >
-                                    <Users className="h-4 w-4 mr-2" />
-                                    Residents
-                                </Link>
-                            )}
-
-                            {user?.role?.name === 'admin' && (
-                                <Link
-                                    to="/management"
-                                    className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
-                                >
-                                    <UserPlus className="h-4 w-4 mr-2" />
-                                    Management
-                                </Link>
+                        <div className="hidden md:ml-6 md:flex md:space-x-4 lg:space-x-6 items-center">
+                            {mainLinks.slice(0, 5).map((link) => (
+                                link.show && (
+                                    <Link
+                                        key={link.to}
+                                        to={link.to}
+                                        className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                                    >
+                                        <link.icon className="h-4 w-4 mr-2" />
+                                        {link.label}
+                                    </Link>
+                                )
+                            ))}
+                            {mainLinks.filter((l) => l.show).length > 5 && (
+                                <div className="relative group">
+                                    <button className="inline-flex items-center px-2 py-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors border border-gray-200 rounded-md">
+                                        More
+                                    </button>
+                                    <div className="absolute left-0 mt-2 w-48 bg-white shadow-lg border border-gray-200 rounded-md py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                                        {mainLinks.slice(5).map((link) => (
+                                            link.show && (
+                                                <Link
+                                                    key={link.to}
+                                                    to={link.to}
+                                                    className="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                >
+                                                    <link.icon className="h-4 w-4 mr-2" />
+                                                    {link.label}
+                                                </Link>
+                                            )
+                                        ))}
+                                    </div>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -173,6 +175,41 @@ const Navbar = () => {
                     >
                         <Building2 className="h-5 w-5 mr-3" />
                         Buildings
+                    </Link>
+                    <Link
+                        to="/search"
+                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                        <Search className="h-5 w-5 mr-3" />
+                        Search
+                    </Link>
+                    <Link
+                        to="/leases"
+                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                        <ClipboardList className="h-5 w-5 mr-3" />
+                        Leases
+                    </Link>
+                    <Link
+                        to="/marketplace"
+                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                        <ShoppingBag className="h-5 w-5 mr-3" />
+                        Marketplace
+                    </Link>
+                    <Link
+                        to="/my-requests"
+                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                        <ClipboardList className="h-5 w-5 mr-3" />
+                        My Requests
+                    </Link>
+                    <Link
+                        to="/my-apartments"
+                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                    >
+                        <HomeIcon className="h-5 w-5 mr-3" />
+                        My Apartments
                     </Link>
 
                     {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (

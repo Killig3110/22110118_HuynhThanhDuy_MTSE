@@ -2,6 +2,181 @@ const { Op } = require('sequelize');
 const { Apartment, Floor, Building, HouseholdMember } = require('../models');
 
 /**
+ * Fuzzy search and filter apartments across blocks/buildings/floors
+ */
+const searchApartments = async (req, res) => {
+    try {
+        const {
+            q = '',
+            page = 1,
+            limit = 20,
+            sortBy = 'apartmentNumber',
+            sortOrder = 'ASC',
+            buildingId,
+            blockId,
+            floorId,
+            type,
+            status,
+            minArea,
+            maxArea,
+            minRent,
+            maxRent,
+            minPrice,
+            maxPrice,
+            bedrooms,
+            bathrooms,
+            hasParking,
+            isListedForRent,
+            isListedForSale
+        } = req.query;
+
+        const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
+        const parsedLimit = Math.min(parseInt(limit, 10) || 20, 100);
+        const offset = (parsedPage - 1) * parsedLimit;
+
+        // Base filters
+        const whereClause = { isActive: true };
+
+        if (floorId) whereClause.floorId = parseInt(floorId, 10);
+        if (type) whereClause.type = type;
+        if (status) whereClause.status = status;
+        if (bedrooms !== undefined) whereClause.bedrooms = parseInt(bedrooms, 10);
+        if (bathrooms !== undefined) whereClause.bathrooms = parseInt(bathrooms, 10);
+        if (hasParking === 'true') whereClause.parkingSlots = { [Op.gt]: 0 };
+
+        // Numeric ranges
+        if (minArea || maxArea) {
+            whereClause.area = {};
+            if (minArea) whereClause.area[Op.gte] = parseFloat(minArea);
+            if (maxArea) whereClause.area[Op.lte] = parseFloat(maxArea);
+        }
+
+        if (minRent || maxRent) {
+            whereClause.monthlyRent = {};
+            if (minRent) whereClause.monthlyRent[Op.gte] = parseFloat(minRent);
+            if (maxRent) whereClause.monthlyRent[Op.lte] = parseFloat(maxRent);
+        }
+
+        if (minPrice || maxPrice) {
+            whereClause.salePrice = {};
+            if (minPrice) whereClause.salePrice[Op.gte] = parseFloat(minPrice);
+            if (maxPrice) whereClause.salePrice[Op.lte] = parseFloat(maxPrice);
+        }
+
+        if (isListedForRent !== undefined) {
+            whereClause.isListedForRent = isListedForRent === 'true';
+        }
+        if (isListedForSale !== undefined) {
+            whereClause.isListedForSale = isListedForSale === 'true';
+        }
+
+        // Tokenized fuzzy search on multiple fields
+        const tokens = q.trim().split(/\s+/).filter(Boolean);
+        if (tokens.length) {
+            whereClause[Op.and] = tokens.map(token => {
+                const pattern = `%${token}%`;
+                return {
+                    [Op.or]: [
+                        { apartmentNumber: { [Op.like]: pattern } },
+                        { type: { [Op.like]: pattern } },
+                        { description: { [Op.like]: pattern } },
+                        { '$floor.building.name$': { [Op.like]: pattern } },
+                        { '$floor.building.buildingCode$': { [Op.like]: pattern } }
+                    ]
+                };
+            });
+        }
+
+        // Include tree so we can filter by building/block and return context
+        const include = [
+            {
+                model: Floor,
+                as: 'floor',
+                attributes: ['id', 'floorNumber', 'buildingId'],
+                include: [{
+                    model: Building,
+                    as: 'building',
+                    attributes: ['id', 'name', 'buildingCode', 'blockId']
+                }]
+            }
+        ];
+
+        if (buildingId) {
+            include[0].where = { ...(include[0].where || {}), buildingId: parseInt(buildingId, 10) };
+        }
+
+        if (blockId) {
+            include[0].include[0].where = { ...(include[0].include[0].where || {}), blockId: parseInt(blockId, 10) };
+            include[0].include[0].required = true;
+        }
+
+        // Sorting
+        const allowedSortFields = ['apartmentNumber', 'monthlyRent', 'area', 'bedrooms', 'bathrooms', 'createdAt', 'updatedAt'];
+        const normalizedSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'apartmentNumber';
+        const normalizedSortOrder = ['ASC', 'DESC'].includes(String(sortOrder).toUpperCase())
+            ? String(sortOrder).toUpperCase()
+            : 'ASC';
+
+        const order = [];
+        if (normalizedSortBy === 'area' || normalizedSortBy === 'monthlyRent' || normalizedSortBy === 'bedrooms' || normalizedSortBy === 'bathrooms') {
+            order.push([normalizedSortBy, normalizedSortOrder]);
+        } else {
+            order.push([normalizedSortBy, normalizedSortOrder]);
+        }
+        // Stable secondary ordering
+        order.push([{ model: Floor, as: 'floor' }, 'floorNumber', 'ASC']);
+        order.push(['apartmentNumber', 'ASC']);
+
+        const { count, rows: apartments } = await Apartment.findAndCountAll({
+            where: whereClause,
+            include,
+            order,
+            limit: parsedLimit,
+            offset,
+            distinct: true
+        });
+
+        const totalPages = Math.ceil(count / parsedLimit);
+
+        res.status(200).json({
+            success: true,
+            message: tokens.length ? 'Fuzzy search completed' : 'Apartments retrieved',
+            data: apartments,
+            filters: {
+                q,
+                buildingId,
+                blockId,
+                floorId,
+                type,
+                status,
+                minArea,
+                maxArea,
+                minRent,
+                maxRent,
+                bedrooms,
+                bathrooms,
+                hasParking
+            },
+            pagination: {
+                currentPage: parsedPage,
+                totalPages,
+                totalItems: count,
+                itemsPerPage: parsedLimit,
+                hasNext: parsedPage < totalPages,
+                hasPrev: parsedPage > 1
+            }
+        });
+    } catch (error) {
+        console.error('Error searching apartments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to search apartments',
+            error: error.message
+        });
+    }
+};
+
+/**
  * Get apartments by floor ID
  */
 const getApartmentsByFloor = async (req, res) => {
@@ -424,6 +599,7 @@ const deleteApartment = async (req, res) => {
 };
 
 module.exports = {
+    searchApartments,
     getApartmentsByFloor,
     getApartmentById,
     createApartment,

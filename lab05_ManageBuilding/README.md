@@ -79,6 +79,17 @@ npm run dev     # Start Vite development server
 | Accountant | accountant@building.com | account123 | Financial management |
 | Resident | 22110118@student.hcmute.edu.vn | duy123 | Personal services |
 
+### 🔍 Fuzzy Search + Filters (Backend)
+- **Endpoint**: `GET /api/apartments/search` (JWT protected)
+- **Search**: Tokenized fuzzy search over apartment number, type, description, building name/code
+- **Filters**: `blockId`, `buildingId`, `floorId`, `status`, `type`, `bedrooms`, `bathrooms`, `hasParking`, `minArea/maxArea`, `minRent/maxRent`
+- **Sorting**: `sortBy` (`apartmentNumber`, `monthlyRent`, `area`, `bedrooms`, `bathrooms`, `createdAt`, `updatedAt`) + `sortOrder`
+- **Example**:
+```bash
+curl -H "Authorization: Bearer <token>" \
+  "http://localhost:5000/api/apartments/search?q=201&blockId=1&minArea=50&maxRent=1200&bedrooms=2&sortBy=monthlyRent&sortOrder=ASC"
+```
+
 ## 🏗️ Database Models
 
 ### Core Structure

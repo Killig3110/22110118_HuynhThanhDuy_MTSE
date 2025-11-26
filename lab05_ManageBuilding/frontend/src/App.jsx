@@ -15,6 +15,16 @@ import UserCreate from './pages/users/UserCreate';
 import UserEdit from './pages/users/UserEdit';
 import BuildingList from './pages/buildings/BuildingList';
 import InteractiveBuildingMap from './pages/buildings/InteractiveBuildingMap';
+import SearchPage from './pages/Search';
+import LeaseRequests from './pages/leases/LeaseRequests';
+import Marketplace from './pages/marketplace/Marketplace';
+import MyRequests from './pages/leases/MyRequests';
+import MyApartments from './pages/apartments/MyApartments';
+import BlockManager from './pages/admin/BlockManager';
+import BuildingManager from './pages/admin/BuildingManager';
+import FloorManager from './pages/admin/FloorManager';
+import ApartmentManager from './pages/admin/ApartmentManager';
+import UserManager from './pages/admin/UserManager';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -178,6 +188,86 @@ function App() {
                             element={
                                 <ProtectedRoute>
                                     <InteractiveBuildingMap />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/search"
+                            element={
+                                <ProtectedRoute>
+                                    <SearchPage />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/leases"
+                            element={
+                                <ProtectedRoute>
+                                    <LeaseRequests />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/marketplace"
+                            element={
+                                <ProtectedRoute>
+                                    <Marketplace />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/my-requests"
+                            element={
+                                <ProtectedRoute>
+                                    <MyRequests />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/my-apartments"
+                            element={
+                                <ProtectedRoute>
+                                    <MyApartments />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/blocks"
+                            element={
+                                <ProtectedRoute requiredRole="admin">
+                                    <BlockManager />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/buildings"
+                            element={
+                                <ProtectedRoute requiredRole="admin">
+                                    <BuildingManager />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/floors"
+                            element={
+                                <ProtectedRoute requiredRole="admin">
+                                    <FloorManager />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/apartments"
+                            element={
+                                <ProtectedRoute requiredRole="admin">
+                                    <ApartmentManager />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/users"
+                            element={
+                                <ProtectedRoute requiredRole="admin">
+                                    <UserManager />
                                 </ProtectedRoute>
                             }
                         />

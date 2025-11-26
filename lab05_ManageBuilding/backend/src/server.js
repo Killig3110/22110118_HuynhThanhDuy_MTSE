@@ -11,6 +11,8 @@ const buildingRoutes = require('./routes/building.routes');
 const blockRoutes = require('./routes/block.routes');
 const floorRoutes = require('./routes/floor.routes');
 const apartmentRoutes = require('./routes/apartment.routes');
+const searchRoutes = require('./routes/search.routes');
+const leaseRoutes = require('./routes/lease.routes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/validation');
@@ -85,6 +87,8 @@ app.use('/api/buildings', buildingRoutes);
 app.use('/api/blocks', blockRoutes);
 app.use('/api/floors', floorRoutes);
 app.use('/api/apartments', apartmentRoutes);
+app.use('/api/search', searchRoutes);
+app.use('/api/leases', leaseRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

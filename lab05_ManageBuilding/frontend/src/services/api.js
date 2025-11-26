@@ -119,4 +119,47 @@ export const healthAPI = {
     check: () => api.get('/health'),
 };
 
+// Search API endpoints
+export const searchAPI = {
+    searchAll: (params) => api.get('/search', { params }),
+    searchApartments: (params) => api.get('/apartments/search', { params }),
+};
+
+// Lease workflow API
+export const leaseAPI = {
+    create: (payload) => api.post('/leases', payload),
+    list: (params) => api.get('/leases', { params }),
+    decide: (id, decision) => api.patch(`/leases/${id}/decision`, { decision }),
+    cancel: (id) => api.patch(`/leases/${id}/cancel`)
+};
+
+// CRUD for core hierarchy
+export const blockAPI = {
+    list: (params) => api.get('/blocks', { params }),
+    create: (payload) => api.post('/blocks', payload),
+    update: (id, payload) => api.put(`/blocks/${id}`, payload),
+    remove: (id) => api.delete(`/blocks/${id}`),
+};
+
+export const buildingAPI = {
+    list: (params) => api.get('/buildings', { params }),
+    create: (payload) => api.post('/buildings', payload),
+    update: (id, payload) => api.put(`/buildings/${id}`, payload),
+    remove: (id) => api.delete(`/buildings/${id}`),
+};
+
+export const floorAPI = {
+    listByBuilding: (buildingId, params) => api.get(`/buildings/${buildingId}/floors`, { params }),
+    create: (payload) => api.post('/floors', payload),
+    update: (id, payload) => api.put(`/floors/${id}`, payload),
+    remove: (id) => api.delete(`/floors/${id}`),
+};
+
+export const apartmentAPI = {
+    listByFloor: (floorId, params) => api.get(`/buildings/floors/${floorId}/apartments`, { params }),
+    create: (payload) => api.post('/apartments', payload),
+    update: (id, payload) => api.put(`/apartments/${id}`, payload),
+    remove: (id) => api.delete(`/apartments/${id}`),
+};
+
 export default api;
