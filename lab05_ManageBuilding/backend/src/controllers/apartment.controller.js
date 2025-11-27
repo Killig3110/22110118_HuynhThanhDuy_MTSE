@@ -492,7 +492,10 @@ const updateApartment = async (req, res) => {
             parkingSlots,
             monthlyRent,
             maintenanceFee,
-            status
+            status,
+            isListedForRent,
+            isListedForSale,
+            salePrice
         } = req.body;
 
         const apartment = await Apartment.findByPk(id);
@@ -500,6 +503,20 @@ const updateApartment = async (req, res) => {
             return res.status(404).json({
                 success: false,
                 message: 'Apartment not found'
+            });
+        }
+
+        const role = req.user?.role?.name;
+        const isAdmin = ['admin', 'building_manager'].includes(role);
+        const isOwner = req.user?.id && apartment.ownerId === req.user.id;
+        const canManagePrice = apartment.ownerId ? isOwner : isAdmin;
+
+        // Permission gate: pricing/listing/status changes only by owner (if exists) or admin when no owner
+        const wantsPricingChange = [monthlyRent, salePrice, isListedForRent, isListedForSale, status].some(v => v !== undefined);
+        if (wantsPricingChange && !canManagePrice) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the apartment owner or admin (when no owner) can update pricing, listing, or status'
             });
         }
 
@@ -521,6 +538,13 @@ const updateApartment = async (req, res) => {
             }
         }
 
+        // Status normalization: allow only specific statuses
+        const allowedStatuses = ['vacant', 'occupied', 'maintenance', 'reserved'];
+        const nextStatus = status !== undefined ? status : apartment.status;
+        if (status && !allowedStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status value' });
+        }
+
         // Update apartment
         await apartment.update({
             apartmentNumber: apartmentNumber !== undefined ? apartmentNumber : apartment.apartmentNumber,
@@ -532,7 +556,10 @@ const updateApartment = async (req, res) => {
             parkingSlots: parkingSlots !== undefined ? parkingSlots : apartment.parkingSlots,
             monthlyRent: monthlyRent !== undefined ? monthlyRent : apartment.monthlyRent,
             maintenanceFee: maintenanceFee !== undefined ? maintenanceFee : apartment.maintenanceFee,
-            status: status !== undefined ? status : apartment.status
+            status: nextStatus,
+            isListedForRent: isListedForRent !== undefined ? isListedForRent : apartment.isListedForRent,
+            isListedForSale: isListedForSale !== undefined ? isListedForSale : apartment.isListedForSale,
+            salePrice: salePrice !== undefined ? salePrice : apartment.salePrice
         });
 
         // Fetch updated apartment with associations
