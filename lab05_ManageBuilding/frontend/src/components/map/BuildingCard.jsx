@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BuildingOffice2Icon, ChevronRightIcon } from '@heroicons/react/24/outline';
 
-const BuildingCard = ({ building, onSelect, canEdit, onEdit, onDelete, onAddFloor }) => {
+const BuildingCard = ({ building, onSelect, canEdit, onEdit, onDelete, onAddFloor, onContextMenu }) => {
     const buildingImage = `https://picsum.photos/300/200?random=${building.id}&blur=1`;
     const [menuOpen, setMenuOpen] = useState(false);
 
@@ -9,6 +9,7 @@ const BuildingCard = ({ building, onSelect, canEdit, onEdit, onDelete, onAddFloo
         <div
             className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer overflow-hidden relative"
             onClick={() => onSelect?.(building)}
+            onContextMenu={(e) => { e.preventDefault(); onContextMenu?.(e, 'building', building); }}
         >
             {canEdit && (
                 <div className="absolute top-3 right-3 z-20">

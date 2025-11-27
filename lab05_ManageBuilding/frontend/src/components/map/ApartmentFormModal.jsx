@@ -11,8 +11,9 @@ const empty = {
     salePrice: ''
 };
 
-const ApartmentFormModal = ({ open, onClose, onSave, initialData, floorOptions = [] }) => {
+const ApartmentFormModal = ({ open, onClose, onSave, initialData, floorOptions = [], defaultFloorId }) => {
     const [form, setForm] = useState(empty);
+    const [errors, setErrors] = useState({});
 
     useEffect(() => {
         if (initialData) {
@@ -26,16 +27,40 @@ const ApartmentFormModal = ({ open, onClose, onSave, initialData, floorOptions =
                 monthlyRent: initialData.monthlyRent || '',
                 salePrice: initialData.salePrice || ''
             });
+            setErrors({});
         } else {
-            setForm(empty);
+            setForm({
+                ...empty,
+                floorId: defaultFloorId || ''
+            });
+            setErrors({});
         }
-    }, [initialData, open]);
+    }, [initialData, open, defaultFloorId]);
 
     if (!open) return null;
 
+    const validate = () => {
+        const next = {};
+        if (!form.floorId) next.floorId = 'Floor is required';
+        if (!form.apartmentNumber.trim()) next.apartmentNumber = 'Apartment number is required';
+        if (!form.area || Number(form.area) <= 0) next.area = 'Area must be greater than 0';
+        if (!form.bedrooms || Number(form.bedrooms) < 0) next.bedrooms = 'Bedrooms must be 0 or more';
+        if (!form.bathrooms || Number(form.bathrooms) < 0) next.bathrooms = 'Bathrooms must be 0 or more';
+        setErrors(next);
+        return Object.keys(next).length === 0;
+    };
+
     const submit = (e) => {
         e.preventDefault();
-        onSave?.(form);
+        if (!validate()) return;
+        onSave?.({
+            ...form,
+            area: Number(form.area),
+            bedrooms: Number(form.bedrooms),
+            bathrooms: Number(form.bathrooms),
+            monthlyRent: form.monthlyRent ? Number(form.monthlyRent) : undefined,
+            salePrice: form.salePrice ? Number(form.salePrice) : undefined
+        });
     };
 
     return (
@@ -46,11 +71,21 @@ const ApartmentFormModal = ({ open, onClose, onSave, initialData, floorOptions =
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
                 </div>
                 <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <select className="border rounded px-3 py-2 text-sm" value={form.floorId} onChange={(e) => setForm({ ...form, floorId: e.target.value })} required>
-                        <option value="">Select Floor</option>
-                        {floorOptions.map(f => <option key={f.id} value={f.id}>Floor {f.floorNumber}</option>)}
-                    </select>
-                    <input className="border rounded px-3 py-2 text-sm" placeholder="Apartment Number" value={form.apartmentNumber} onChange={(e) => setForm({ ...form, apartmentNumber: e.target.value })} required />
+                    {defaultFloorId ? (
+                        <select className="border rounded px-3 py-2 text-sm bg-gray-100" value={form.floorId} disabled>
+                            <option value={defaultFloorId}>Floor {floorOptions.find(f => f.id === defaultFloorId)?.floorNumber || ''}</option>
+                        </select>
+                    ) : (
+                        <select className={`border rounded px-3 py-2 text-sm ${errors.floorId ? 'border-red-500' : ''}`} value={form.floorId} onChange={(e) => setForm({ ...form, floorId: e.target.value })}>
+                            <option value="">Select Floor</option>
+                            {floorOptions.map(f => <option key={f.id} value={f.id}>Floor {f.floorNumber}</option>)}
+                        </select>
+                    )}
+                    {errors.floorId && <p className="text-red-500 text-xs -mt-2">{errors.floorId}</p>}
+                    <div>
+                        <input className={`border rounded px-3 py-2 text-sm w-full ${errors.apartmentNumber ? 'border-red-500' : ''}`} placeholder="Apartment Number" value={form.apartmentNumber} onChange={(e) => setForm({ ...form, apartmentNumber: e.target.value })} />
+                        {errors.apartmentNumber && <p className="text-red-500 text-xs mt-1">{errors.apartmentNumber}</p>}
+                    </div>
                     <select className="border rounded px-3 py-2 text-sm" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                         <option value="studio">Studio</option>
                         <option value="1bhk">1bhk</option>
@@ -60,9 +95,18 @@ const ApartmentFormModal = ({ open, onClose, onSave, initialData, floorOptions =
                         <option value="penthouse">Penthouse</option>
                         <option value="duplex">Duplex</option>
                     </select>
-                    <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Area" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} required />
-                    <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Bedrooms" value={form.bedrooms} onChange={(e) => setForm({ ...form, bedrooms: e.target.value })} required />
-                    <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Bathrooms" value={form.bathrooms} onChange={(e) => setForm({ ...form, bathrooms: e.target.value })} required />
+                    <div>
+                        <input className={`border rounded px-3 py-2 text-sm w-full ${errors.area ? 'border-red-500' : ''}`} type="number" placeholder="Area" value={form.area} onChange={(e) => setForm({ ...form, area: e.target.value })} />
+                        {errors.area && <p className="text-red-500 text-xs mt-1">{errors.area}</p>}
+                    </div>
+                    <div>
+                        <input className={`border rounded px-3 py-2 text-sm w-full ${errors.bedrooms ? 'border-red-500' : ''}`} type="number" placeholder="Bedrooms" value={form.bedrooms} onChange={(e) => setForm({ ...form, bedrooms: e.target.value })} />
+                        {errors.bedrooms && <p className="text-red-500 text-xs mt-1">{errors.bedrooms}</p>}
+                    </div>
+                    <div>
+                        <input className={`border rounded px-3 py-2 text-sm w-full ${errors.bathrooms ? 'border-red-500' : ''}`} type="number" placeholder="Bathrooms" value={form.bathrooms} onChange={(e) => setForm({ ...form, bathrooms: e.target.value })} />
+                        {errors.bathrooms && <p className="text-red-500 text-xs mt-1">{errors.bathrooms}</p>}
+                    </div>
                     <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Monthly Rent" value={form.monthlyRent} onChange={(e) => setForm({ ...form, monthlyRent: e.target.value })} />
                     <input className="border rounded px-3 py-2 text-sm" type="number" placeholder="Sale Price" value={form.salePrice} onChange={(e) => setForm({ ...form, salePrice: e.target.value })} />
                     <div className="md:col-span-2 flex gap-2 mt-2">

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { HomeIcon } from '@heroicons/react/24/outline';
 
-const FloorCard = ({ floor, onSelect, canEdit, onEdit, onDelete, onAddApartment }) => {
+const FloorCard = ({ floor, onSelect, canEdit, onEdit, onDelete, onAddApartment, onContextMenu }) => {
     const [menuOpen, setMenuOpen] = useState(false);
 
     return (
         <div
             className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-4 text-white cursor-pointer transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl text-center relative"
             onClick={() => onSelect?.(floor)}
+            onContextMenu={(e) => { e.preventDefault(); onContextMenu?.(e, 'floor', floor); }}
         >
             {canEdit && (
                 <div className="absolute top-2 right-2">

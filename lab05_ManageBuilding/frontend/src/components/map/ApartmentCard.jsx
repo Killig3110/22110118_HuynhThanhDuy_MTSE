@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ApartmentCard = ({ apartment, onClick, canEdit, onEdit, onDelete }) => {
+const ApartmentCard = ({ apartment, onClick, canEdit, onEdit, onDelete, onContextMenu }) => {
     const [menuOpen, setMenuOpen] = useState(false);
 
     return (
@@ -12,6 +12,7 @@ const ApartmentCard = ({ apartment, onClick, canEdit, onEdit, onDelete }) => {
                     : 'bg-gradient-to-r from-yellow-500 to-orange-600'
                 } text-white relative overflow-hidden`}
             onClick={onClick}
+            onContextMenu={(e) => { e.preventDefault(); onContextMenu?.(e, 'apartment', apartment); }}
         >
             {canEdit && (
                 <div className="absolute top-2 right-2 z-10">

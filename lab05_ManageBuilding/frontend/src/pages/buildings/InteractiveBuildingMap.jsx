@@ -17,7 +17,7 @@ import {
     XMarkIcon,
     ArrowPathIcon
 } from '@heroicons/react/24/outline';
-import { searchAPI, leaseAPI } from '../../services/api';
+import { searchAPI, leaseAPI, blockAPI, buildingAPI, floorAPI, apartmentAPI } from '../../services/api';
 import api from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import BlockCard from '../../components/map/BlockCard';
@@ -25,6 +25,10 @@ import BuildingCard from '../../components/map/BuildingCard';
 import FloorCard from '../../components/map/FloorCard';
 import ApartmentCard from '../../components/map/ApartmentCard';
 import ApartmentDetailsModal from '../../components/map/ApartmentDetailsModal';
+import BlockFormModal from '../../components/map/BlockFormModal';
+import BuildingFormModal from '../../components/map/BuildingFormModal';
+import FloorFormModal from '../../components/map/FloorFormModal';
+import ApartmentFormModal from '../../components/map/ApartmentFormModal';
 import '../../styles/InteractiveBuildingMap.css';
 
 // Add CSS styles for 3D effects
@@ -75,6 +79,18 @@ const InteractiveBuildingMap = () => {
     const [filterType, setFilterType] = useState('all');
     const [showFilters, setShowFilters] = useState(false);
     const [selectedApartmentDetails, setSelectedApartmentDetails] = useState(null);
+    const isAdmin = ['admin', 'building_manager'].includes(user?.role?.name);
+    const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, target: null, level: null });
+
+    // Modal state
+    const [blockModalOpen, setBlockModalOpen] = useState(false);
+    const [buildingModalOpen, setBuildingModalOpen] = useState(false);
+    const [floorModalOpen, setFloorModalOpen] = useState(false);
+    const [apartmentModalOpen, setApartmentModalOpen] = useState(false);
+    const [editingBlock, setEditingBlock] = useState(null);
+    const [editingBuilding, setEditingBuilding] = useState(null);
+    const [editingFloor, setEditingFloor] = useState(null);
+    const [editingApartment, setEditingApartment] = useState(null);
 
     // Fetch blocks on component mount
     useEffect(() => {
@@ -456,13 +472,246 @@ const InteractiveBuildingMap = () => {
         </div>
     );
 
-    const getStatusColor = (status) => {
-        switch (status) {
-            case 'occupied': return 'bg-red-500';
-            case 'vacant': return 'bg-green-500';
-            case 'maintenance': return 'bg-yellow-500';
-            default: return 'bg-gray-400';
+const getStatusColor = (status) => {
+    switch (status) {
+        case 'occupied': return 'bg-red-500';
+        case 'vacant': return 'bg-green-500';
+        case 'maintenance': return 'bg-yellow-500';
+        default: return 'bg-gray-400';
+    }
+    };
+
+    // Action helpers
+    const openAddBlock = () => {
+        setEditingBlock(null);
+        setBlockModalOpen(true);
+    };
+    const openAddBuilding = (block) => {
+        if (block) setSelectedBlock(block);
+        setEditingBuilding(null);
+        setBuildingModalOpen(true);
+    };
+    const openAddFloor = (building) => {
+        if (building) setSelectedBuilding(building);
+        setEditingFloor(null);
+        setFloorModalOpen(true);
+    };
+    const openAddApartment = (floor) => {
+        if (floor) setSelectedFloor(floor);
+        setEditingApartment(null);
+        setApartmentModalOpen(true);
+    };
+
+    const handleEditBlock = (block) => {
+        setEditingBlock(block);
+        setBlockModalOpen(true);
+    };
+    const handleDeleteBlock = async (block) => {
+        if (!window.confirm('Delete this block?')) return;
+        try {
+            await blockAPI.remove(block.id);
+            toast.success('Block deleted');
+            fetchBlocks();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Delete block failed');
         }
+    };
+
+    const handleEditBuilding = (building) => {
+        setEditingBuilding(building);
+        setBuildingModalOpen(true);
+    };
+    const handleDeleteBuilding = async (building) => {
+        if (!window.confirm('Delete this building?')) return;
+        try {
+            await buildingAPI.remove(building.id);
+            toast.success('Building deleted');
+            if (selectedBlock) fetchBuildingsByBlock(selectedBlock.id);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Delete building failed');
+        }
+    };
+
+    const handleEditFloor = (floor) => {
+        setEditingFloor(floor);
+        setFloorModalOpen(true);
+    };
+    const handleDeleteFloor = async (floor) => {
+        if (!window.confirm('Delete this floor?')) return;
+        try {
+            await floorAPI.remove(floor.id);
+            toast.success('Floor deleted');
+            if (selectedBuilding) fetchFloorsByBuilding(selectedBuilding.id);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Delete floor failed');
+        }
+    };
+
+    const handleEditApartment = (apt) => {
+        setEditingApartment(apt);
+        setApartmentModalOpen(true);
+    };
+    const handleDeleteApartment = async (apt) => {
+        if (!window.confirm('Delete this apartment?')) return;
+        try {
+            await apartmentAPI.remove(apt.id);
+            toast.success('Apartment deleted');
+            if (selectedFloor) fetchApartmentsByFloor(selectedFloor.id);
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Delete apartment failed');
+        }
+    };
+
+    const openContextMenu = (event, level, target) => {
+        if (!isAdmin) return;
+        event.preventDefault();
+        setContextMenu({
+            visible: true,
+            x: event.clientX,
+            y: event.clientY,
+            target,
+            level
+        });
+    };
+
+    const closeContextMenu = () => setContextMenu({ visible: false, x: 0, y: 0, target: null, level: null });
+
+// ---- Action helpers (add/edit/delete) will be attached below ----
+
+    // Modal save handlers
+    const handleSaveBlock = async (formData) => {
+        try {
+            if (editingBlock) {
+                await blockAPI.update(editingBlock.id, formData);
+                toast.success('Block updated');
+            } else {
+                await blockAPI.create(formData);
+                toast.success('Block created');
+            }
+            setBlockModalOpen(false);
+            setEditingBlock(null);
+            fetchBlocks();
+        } catch (error) {
+            const detail = error.response?.data?.message || error.response?.data?.errors?.join(', ');
+            toast.error(detail || 'Save block failed');
+        }
+    };
+
+    const handleSaveBuilding = async (formData) => {
+        try {
+            const payload = { ...formData, blockId: formData.blockId || selectedBlock?.id };
+            if (editingBuilding) {
+                await buildingAPI.update(editingBuilding.id, payload);
+                toast.success('Building updated');
+            } else {
+                await buildingAPI.create(payload);
+                toast.success('Building created');
+            }
+            setBuildingModalOpen(false);
+            setEditingBuilding(null);
+            if (payload.blockId) fetchBuildingsByBlock(payload.blockId);
+        } catch (error) {
+            const detail = error.response?.data?.message || error.response?.data?.errors?.join(', ');
+            toast.error(detail || 'Save building failed');
+        }
+    };
+
+    const handleSaveFloor = async (formData) => {
+        try {
+            const payload = { ...formData, buildingId: formData.buildingId || selectedBuilding?.id };
+            if (editingFloor) {
+                await floorAPI.update(editingFloor.id, payload);
+                toast.success('Floor updated');
+            } else {
+                await floorAPI.create(payload);
+                toast.success('Floor created');
+            }
+            setFloorModalOpen(false);
+            setEditingFloor(null);
+            if (payload.buildingId) fetchFloorsByBuilding(payload.buildingId);
+        } catch (error) {
+            const detail = error.response?.data?.message || error.response?.data?.errors?.join(', ');
+            toast.error(detail || 'Save floor failed');
+        }
+    };
+
+    const handleSaveApartment = async (formData) => {
+        try {
+            const payload = { ...formData, floorId: formData.floorId || selectedFloor?.id };
+            if (editingApartment) {
+                await apartmentAPI.update(editingApartment.id, payload);
+                toast.success('Apartment updated');
+            } else {
+                await apartmentAPI.create(payload);
+                toast.success('Apartment created');
+            }
+            setApartmentModalOpen(false);
+            setEditingApartment(null);
+            if (payload.floorId) fetchApartmentsByFloor(payload.floorId);
+        } catch (error) {
+            const detail = error.response?.data?.message || error.response?.data?.errors?.join(', ');
+            toast.error(detail || 'Save apartment failed');
+        }
+    };
+
+    const renderAddButton = () => {
+        if (!isAdmin) return null;
+        // Chỉ hiển thị nút thêm ở cấp root để tránh trùng lặp với nút bên trong view
+        if (!selectedBlock) {
+            return (
+                <button
+                    onClick={() => { setEditingBlock(null); setBlockModalOpen(true); }}
+                    className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                >
+                    + Add Block
+                </button>
+            );
+        }
+        return null;
+    };
+
+    const renderContextMenu = () => {
+        if (!contextMenu.visible || !contextMenu.target) return null;
+        const { x, y, level, target } = contextMenu;
+        const actions = [];
+        if (level === 'block') {
+            actions.push({ label: 'Add Building', onClick: () => openAddBuilding(target) });
+            actions.push({ label: 'Edit', onClick: () => handleEditBlock(target) });
+            actions.push({ label: 'Delete', danger: true, onClick: () => handleDeleteBlock(target) });
+        }
+        if (level === 'building') {
+            actions.push({ label: 'Add Floor', onClick: () => openAddFloor(target) });
+            actions.push({ label: 'Edit', onClick: () => handleEditBuilding(target) });
+            actions.push({ label: 'Delete', danger: true, onClick: () => handleDeleteBuilding(target) });
+        }
+        if (level === 'floor') {
+            actions.push({ label: 'Add Apartment', onClick: () => openAddApartment(target) });
+            actions.push({ label: 'Edit', onClick: () => handleEditFloor(target) });
+            actions.push({ label: 'Delete', danger: true, onClick: () => handleDeleteFloor(target) });
+        }
+        if (level === 'apartment') {
+            actions.push({ label: 'Edit', onClick: () => handleEditApartment(target) });
+            actions.push({ label: 'Delete', danger: true, onClick: () => handleDeleteApartment(target) });
+        }
+        return (
+            <div className="fixed inset-0 z-[9999]" onClick={closeContextMenu}>
+                <div
+                    className="absolute bg-white border border-gray-200 rounded shadow-lg text-sm min-w-[160px] py-1"
+                    style={{ top: y, left: x }}
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    {actions.map((action, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => { action.onClick(); closeContextMenu(); }}
+                            className={`w-full text-left px-3 py-2 hover:bg-gray-100 ${action.danger ? 'text-red-600' : 'text-gray-800'}`}
+                        >
+                            {action.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        );
     };
 
     return (
@@ -482,7 +731,10 @@ const InteractiveBuildingMap = () => {
                 {renderBreadcrumbs()}
 
                 {/* Search and Filters */}
-                {(selectedBlock || selectedBuilding || selectedFloor) && renderSearchAndFilters()}
+                <div className="flex items-center justify-between flex-wrap gap-3">
+                    {(selectedBlock || selectedBuilding || selectedFloor) && renderSearchAndFilters()}
+                    {renderAddButton()}
+                </div>
                 {renderFilterPanel()}
 
                 {/* Loading Spinner */}
@@ -499,6 +751,12 @@ const InteractiveBuildingMap = () => {
                             blocks={blocks || []}
                             onBlockSelect={handleBlockSelect}
                             viewMode={viewMode}
+                            canEdit={isAdmin}
+                            onAddBlock={openAddBlock}
+                            onAddBuilding={(block) => openAddBuilding(block)}
+                            onEditBlock={handleEditBlock}
+                            onDeleteBlock={handleDeleteBlock}
+                            onShowContextMenu={openContextMenu}
                         />
                     )}
 
@@ -511,6 +769,12 @@ const InteractiveBuildingMap = () => {
                             searchQuery={searchQuery}
                             filterStatus={filterStatus}
                             filterType={filterType}
+                            canEdit={isAdmin}
+                            onAddBuilding={() => openAddBuilding(selectedBlock)}
+                            onAddFloor={(b) => openAddFloor(b)}
+                            onEditBuilding={handleEditBuilding}
+                            onDeleteBuilding={handleDeleteBuilding}
+                            onShowContextMenu={openContextMenu}
                         />
                     )}
 
@@ -523,6 +787,12 @@ const InteractiveBuildingMap = () => {
                             searchQuery={searchQuery}
                             filterStatus={filterStatus}
                             filterType={filterType}
+                            canEdit={isAdmin}
+                            onAddFloor={() => openAddFloor(selectedBuilding)}
+                            onAddApartment={(f) => openAddApartment(f)}
+                            onEditFloor={handleEditFloor}
+                            onDeleteFloor={handleDeleteFloor}
+                            onShowContextMenu={openContextMenu}
                         />
                     )}
 
@@ -536,16 +806,65 @@ const InteractiveBuildingMap = () => {
                             filterType={filterType}
                             user={user}
                             onRefresh={() => fetchApartmentsByFloor(selectedFloor.id)}
+                            canEdit={isAdmin}
+                            onAddApartment={() => openAddApartment(selectedFloor)}
+                            onEditApartment={handleEditApartment}
+                            onDeleteApartment={handleDeleteApartment}
+                            onShowContextMenu={openContextMenu}
+                            selectedApartmentDetails={selectedApartmentDetails}
+                            setSelectedApartmentDetails={setSelectedApartmentDetails}
                         />
                     )}
-                </div>
             </div>
+        </div>
+
+            {renderContextMenu()}
+
+            {/* Modals */}
+            {blockModalOpen && (
+                <BlockFormModal
+                    open={blockModalOpen}
+                    onClose={() => { setBlockModalOpen(false); setEditingBlock(null); }}
+                    onSave={handleSaveBlock}
+                    initialData={editingBlock}
+                />
+            )}
+            {buildingModalOpen && (
+                <BuildingFormModal
+                    open={buildingModalOpen}
+                    onClose={() => { setBuildingModalOpen(false); setEditingBuilding(null); }}
+                    onSave={handleSaveBuilding}
+                    initialData={editingBuilding}
+                    blocks={blocks}
+                    defaultBlockId={selectedBlock?.id}
+                />
+            )}
+            {floorModalOpen && (
+                <FloorFormModal
+                    open={floorModalOpen}
+                    onClose={() => { setFloorModalOpen(false); setEditingFloor(null); }}
+                    onSave={handleSaveFloor}
+                    initialData={editingFloor}
+                    buildingOptions={buildings}
+                    defaultBuildingId={selectedBuilding?.id}
+                />
+            )}
+            {apartmentModalOpen && (
+                <ApartmentFormModal
+                    open={apartmentModalOpen}
+                    onClose={() => { setApartmentModalOpen(false); setEditingApartment(null); }}
+                    onSave={handleSaveApartment}
+                    initialData={editingApartment}
+                    floorOptions={floors}
+                    defaultFloorId={selectedFloor?.id}
+                />
+            )}
         </div>
     );
 };
 
 // Enhanced Blocks View Component
-const BlocksView = ({ blocks = [], onBlockSelect, viewMode }) => {
+const BlocksView = ({ blocks = [], onBlockSelect, viewMode, canEdit = false, onAddBlock, onAddBuilding, onEditBlock, onDeleteBlock, onShowContextMenu }) => {
     console.log('BlocksView render with blocks:', blocks, 'viewMode:', viewMode);
 
     if (!blocks || blocks.length === 0) {
@@ -561,10 +880,28 @@ const BlocksView = ({ blocks = [], onBlockSelect, viewMode }) => {
     if (viewMode === 'list') {
         return (
             <div className="p-6">
-                <h2 className="text-2xl font-bold mb-6">Select a Block</h2>
+                <div className="flex items-center justify-between mb-6 gap-3">
+                    <h2 className="text-2xl font-bold">Select a Block</h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddBlock?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Block
+                        </button>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {blocks.map(block => (
-                        <BlockCard key={block.id} block={block} onSelect={onBlockSelect} />
+                        <BlockCard
+                            key={block.id}
+                            block={block}
+                            onSelect={onBlockSelect}
+                            canEdit={canEdit}
+                            onAddBuilding={onAddBuilding}
+                            onEdit={onEditBlock}
+                            onDelete={onDeleteBlock}
+                        />
                     ))}
                 </div>
             </div>
@@ -574,7 +911,17 @@ const BlocksView = ({ blocks = [], onBlockSelect, viewMode }) => {
     if (viewMode === '3d') {
         return (
             <div className="p-6">
-                <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">🏙️ 3D Campus Universe</h2>
+                <div className="flex items-center justify-between mb-6 gap-3">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">🏙️ 3D Campus Universe</h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddBlock?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Block
+                        </button>
+                    )}
+                </div>
                 <div className="relative bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 rounded-2xl p-8 min-h-[500px] overflow-hidden shadow-2xl">
                     {/* Animated Background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 animate-pulse"></div>
@@ -591,18 +938,19 @@ const BlocksView = ({ blocks = [], onBlockSelect, viewMode }) => {
                                 const blockColor = colors[index % colors.length];
 
                                 return (
-                                    <div
-                                        key={block.id}
-                                        className="absolute cursor-pointer group"
-                                        style={{
-                                            left: `${20 + (index * 15)}%`,
-                                            top: `${30 + (Math.sin(index * 0.8) * 25)}%`,
-                                            transform: `translateZ(${index * 30}px) rotateY(${index * 12}deg)`,
-                                            animation: `float 4s ease-in-out infinite`,
-                                            animationDelay: `${index * 0.8}s`
-                                        }}
-                                        onClick={() => onBlockSelect(block)}
-                                    >
+                        <div
+                            key={block.id}
+                            className="absolute cursor-pointer group"
+                            style={{
+                                left: `${20 + (index * 15)}%`,
+                                top: `${30 + (Math.sin(index * 0.8) * 25)}%`,
+                                transform: `translateZ(${index * 30}px) rotateY(${index * 12}deg)`,
+                                animation: `float 4s ease-in-out infinite`,
+                                animationDelay: `${index * 0.8}s`
+                            }}
+                            onClick={() => onBlockSelect(block)}
+                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'block', block); }}
+                        >
                                         <div className="relative transform-gpu transition-all duration-500 hover:scale-125 hover:-translate-y-4 hover:rotate-y-12">
                                             {/* Enhanced Shadow with blur */}
                                             <div className="absolute inset-0 bg-gradient-to-br from-black/30 to-black/60 rounded-2xl transform translate-y-6 translate-x-4 scale-110 blur-lg group-hover:scale-125 group-hover:translate-y-8 transition-all duration-500"></div>
@@ -737,6 +1085,7 @@ const BlocksView = ({ blocks = [], onBlockSelect, viewMode }) => {
                                 top: `${40 + (Math.sin(index) * 20)}%`
                             }}
                             onClick={() => onBlockSelect(block)}
+                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'block', block); }}
                         >
                             <div className="group">
                                 <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-blue-500 hover:border-blue-700 transition-all duration-200 transform hover:scale-105">
@@ -819,7 +1168,7 @@ const EnhancedBlockCard = ({ block, onSelect }) => (
         </div>
     </div>
 );// Buildings View Component with Enhanced Visuals
-const BuildingsView = ({ buildings = [], selectedBlock, onBuildingSelect, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all' }) => {
+const BuildingsView = ({ buildings = [], selectedBlock, onBuildingSelect, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all', canEdit = false, onAddBuilding, onAddFloor, onEditBuilding, onDeleteBuilding, onShowContextMenu }) => {
     console.log('BuildingsView render with buildings:', buildings, 'selectedBlock:', selectedBlock);
 
     if (!buildings || buildings.length === 0) {
@@ -843,10 +1192,29 @@ const BuildingsView = ({ buildings = [], selectedBlock, onBuildingSelect, viewMo
     if (viewMode === 'list') {
         return (
             <div className="p-6">
-                <h2 className="text-2xl font-bold mb-6">Buildings in {selectedBlock.name}</h2>
+                <div className="flex items-center justify-between mb-6 gap-3">
+                    <h2 className="text-2xl font-bold">Buildings in {selectedBlock.name}</h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddBuilding?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Building
+                        </button>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredBuildings.map(building => (
-                        <BuildingCard key={building.id} building={building} onSelect={onBuildingSelect} />
+                        <BuildingCard
+                            key={building.id}
+                            building={building}
+                            onSelect={onBuildingSelect}
+                            canEdit={canEdit}
+                            onAddFloor={onAddFloor}
+                            onEdit={onEditBuilding}
+                            onDelete={onDeleteBuilding}
+                            onContextMenu={onShowContextMenu}
+                        />
                     ))}
                 </div>
             </div>
@@ -856,9 +1224,19 @@ const BuildingsView = ({ buildings = [], selectedBlock, onBuildingSelect, viewMo
     if (viewMode === '3d') {
         return (
             <div className="p-6">
-                <h2 className="text-3xl font-bold mb-6 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                    🏢 Block {selectedBlock.name} - 3D Skyline
-                </h2>
+                <div className="flex items-center justify-between mb-6 gap-3">
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
+                        🏢 Block {selectedBlock.name} - 3D Skyline
+                    </h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddBuilding?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Building
+                        </button>
+                    )}
+                </div>
                 <div className="relative bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 rounded-2xl p-8 min-h-[600px] overflow-hidden shadow-2xl">
                     {/* Dynamic Sky Background */}
                     <div className="absolute inset-0 bg-gradient-to-b from-blue-400/20 via-purple-500/10 to-orange-300/20 animate-pulse"></div>
@@ -1002,7 +1380,17 @@ const BuildingsView = ({ buildings = [], selectedBlock, onBuildingSelect, viewMo
 
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-6">Block {selectedBlock.name} - Building Layout</h2>
+            <div className="flex items-center justify-between mb-6 gap-3">
+                <h2 className="text-2xl font-bold">Block {selectedBlock.name} - Building Layout</h2>
+                {canEdit && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onAddBuilding?.(); }}
+                        className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                    >
+                        + Add Building
+                    </button>
+                )}
+            </div>
             <div className="relative bg-gradient-to-b from-gray-100 to-gray-200 rounded-lg p-8 min-h-96">
                 {/* Buildings arranged in a grid */}
                 <div className="grid grid-cols-5 gap-6 h-80">
@@ -1011,6 +1399,7 @@ const BuildingsView = ({ buildings = [], selectedBlock, onBuildingSelect, viewMo
                             key={building.id}
                             className="relative cursor-pointer group"
                             onClick={() => onBuildingSelect(building)}
+                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'building', building); }}
                         >
                             <div className="bg-white rounded-lg shadow-lg p-4 border-2 border-gray-300 hover:border-indigo-500 transition-all duration-200 transform hover:scale-105 h-full flex flex-col justify-center items-center">
                                 <BuildingOffice2Icon className="w-12 h-12 text-indigo-600 mb-2" />
@@ -1132,7 +1521,7 @@ const EnhancedBuildingCard = ({ building, onSelect }) => {
 };
 
 // Floors View Component with Enhanced 3D
-const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all' }) => {
+const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all', canEdit = false, onAddFloor, onAddApartment, onEditFloor, onDeleteFloor, onShowContextMenu }) => {
     console.log('FloorsView render with floors:', floors, 'selectedBuilding:', selectedBuilding);
 
     if (!floors || floors.length === 0) {
@@ -1147,10 +1536,29 @@ const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, se
     if (viewMode === 'list') {
         return (
             <div className="p-6">
-                <h2 className="text-2xl font-bold mb-6">Floors in {selectedBuilding.name}</h2>
+                <div className="flex items-center justify-between mb-6 gap-3">
+                    <h2 className="text-2xl font-bold">Floors in {selectedBuilding.name}</h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddFloor?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Floor
+                        </button>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-4">
                     {floors.map(floor => (
-                        <FloorCard key={floor.id} floor={floor} onSelect={onFloorSelect} />
+                        <FloorCard
+                            key={floor.id}
+                            floor={floor}
+                            onSelect={onFloorSelect}
+                            canEdit={canEdit}
+                            onAddApartment={onAddApartment}
+                            onEdit={onEditFloor}
+                            onDelete={onDeleteFloor}
+                            onContextMenu={onShowContextMenu}
+                        />
                     ))}
                 </div>
             </div>
@@ -1160,7 +1568,17 @@ const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, se
     if (viewMode === '3d') {
         return (
             <div className="p-6">
-                <h2 className="text-2xl font-bold mb-6">{selectedBuilding.name} - 3D Building View</h2>
+                <div className="flex items-center justify-between mb-6 gap-3">
+                    <h2 className="text-2xl font-bold">{selectedBuilding.name} - 3D Building View</h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddFloor?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Floor
+                        </button>
+                    )}
+                </div>
                 <div className="relative bg-gradient-to-b from-slate-900 to-slate-600 rounded-lg p-8 min-h-96 overflow-hidden">
                     {/* 3D Building Cross-section */}
                     <div className="relative flex flex-col-reverse space-y-reverse space-y-1 h-80 justify-center items-center">
@@ -1169,6 +1587,7 @@ const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, se
                                 key={floor.id}
                                 className="relative cursor-pointer group w-64"
                                 onClick={() => onFloorSelect(floor)}
+                                onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'floor', floor); }}
                                 style={{
                                     zIndex: floors.length - index,
                                     transform: `perspective(1000px) rotateX(-10deg) translateZ(${index * 2}px)`,
@@ -1243,7 +1662,17 @@ const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, se
 
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-6">{selectedBuilding.name} - Floor Plan</h2>
+            <div className="flex items-center justify-between mb-6 gap-3">
+                <h2 className="text-2xl font-bold">{selectedBuilding.name} - Floor Plan</h2>
+                {canEdit && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onAddFloor?.(); }}
+                        className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                    >
+                        + Add Floor
+                    </button>
+                )}
+            </div>
             <div className="relative bg-gradient-to-b from-slate-100 to-slate-200 rounded-lg p-8">
                 {/* 2D Building Side View */}
                 <div className="flex flex-col-reverse space-y-reverse space-y-2 max-h-96 overflow-y-auto">
@@ -1252,6 +1681,7 @@ const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, se
                             key={floor.id}
                             className="relative cursor-pointer group"
                             onClick={() => onFloorSelect(floor)}
+                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'floor', floor); }}
                             style={{ zIndex: floors.length - index }}
                         >
                             <div className="bg-white rounded-lg shadow-lg border-2 border-gray-300 hover:border-green-500 transition-all duration-200 transform hover:scale-105 p-4 flex items-center justify-between">
@@ -1275,7 +1705,7 @@ const FloorsView = ({ floors = [], selectedBuilding, onFloorSelect, viewMode, se
 };
 
 // Enhanced Apartments View Component with Filtering
-const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all', user, onRefresh }) => {
+const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery = '', filterStatus = 'all', filterType = 'all', user, onRefresh, canEdit = false, onAddApartment, onEditApartment, onDeleteApartment, onShowContextMenu, selectedApartmentDetails, setSelectedApartmentDetails }) => {
     console.log('ApartmentsView render with apartments:', apartments, 'selectedFloor:', selectedFloor);
 
     if (!apartments || apartments.length === 0) {
@@ -1306,11 +1736,31 @@ const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery 
     if (viewMode === 'list') {
         return (
             <div className="p-6">
-                <h2 className="text-2xl font-bold mb-6">Apartments on Floor {selectedFloor.floorNumber}</h2>
+                <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-2xl font-bold">Apartments on Floor {selectedFloor.floorNumber}</h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddApartment?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Apartment
+                        </button>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {filteredApartments.map(apartment => (
-                        <div key={apartment.id} className="space-y-2">
-                            <ApartmentCard apartment={apartment} onClick={() => handleApartmentClick(apartment)} />
+                        <div
+                            key={apartment.id}
+                            className="space-y-2"
+                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'apartment', apartment); }}
+                        >
+                            <ApartmentCard
+                                apartment={apartment}
+                                onClick={() => handleApartmentClick(apartment)}
+                                canEdit={canEdit}
+                                onEdit={() => onEditApartment?.(apartment)}
+                                onDelete={() => onDeleteApartment?.(apartment)}
+                            />
                             <ApartmentActions
                                 apartment={apartment}
                                 user={user}
@@ -1333,19 +1783,30 @@ const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery 
     if (viewMode === '3d') {
         return (
             <div className="p-6">
-                <h2 className="text-2xl font-bold mb-6">Floor {selectedFloor.floorNumber} - 3D Apartment View</h2>
+                <div className="flex items-center justify-between mb-6 gap-3">
+                    <h2 className="text-2xl font-bold">Floor {selectedFloor.floorNumber} - 3D Apartment View</h2>
+                    {canEdit && (
+                        <button
+                            onClick={(e) => { e.stopPropagation(); onAddApartment?.(); }}
+                            className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                        >
+                            + Add Apartment
+                        </button>
+                    )}
+                </div>
                 <div className="relative bg-gradient-to-br from-indigo-100 to-purple-200 rounded-lg p-8 min-h-96">
                     {/* 3D Apartment Layout */}
                     <div className="grid grid-cols-4 gap-6 h-80 perspective-1000">
-                        {filteredApartments.map((apartment, index) => (
-                            <div
-                                key={apartment.id}
-                                className="group cursor-pointer transform transition-all duration-300 hover:scale-110"
-                                style={{
-                                    transform: `rotateY(${index % 2 === 0 ? '5deg' : '-5deg'}) rotateX(10deg)`,
-                                }}
-                                onClick={() => handleApartmentClick(apartment)}
-                            >
+                    {filteredApartments.map((apartment, index) => (
+                        <div
+                            key={apartment.id}
+                            className="group cursor-pointer transform transition-all duration-300 hover:scale-110"
+                            style={{
+                                transform: `rotateY(${index % 2 === 0 ? '5deg' : '-5deg'}) rotateX(10deg)`,
+                            }}
+                            onClick={() => handleApartmentClick(apartment)}
+                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'apartment', apartment); }}
+                        >
                                 {/* Apartment 3D Box */}
                                 <div className="relative transform-style-preserve-3d">
                                     {/* Front Face */}
@@ -1414,7 +1875,17 @@ const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery 
 
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-6">Floor {selectedFloor.floorNumber} - Apartment Layout</h2>
+            <div className="flex items-center justify-between mb-6 gap-3">
+                <h2 className="text-2xl font-bold">Floor {selectedFloor.floorNumber} - Apartment Layout</h2>
+                {canEdit && (
+                    <button
+                        onClick={(e) => { e.stopPropagation(); onAddApartment?.(); }}
+                        className="px-3 py-2 text-sm bg-emerald-600 text-white rounded hover:bg-emerald-700"
+                    >
+                        + Add Apartment
+                    </button>
+                )}
+            </div>
             <div className="relative bg-gradient-to-b from-amber-50 to-amber-100 rounded-lg p-8">
                 {/* Floor Plan Grid */}
                 <div className="grid grid-cols-4 gap-4 max-w-4xl mx-auto">
@@ -1423,6 +1894,7 @@ const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery 
                             key={apartment.id}
                             className="group cursor-pointer"
                             onClick={() => handleApartmentClick(apartment)}
+                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'apartment', apartment); }}
                         >
                             <div className={`rounded-lg p-4 border-2 transition-all duration-200 transform hover:scale-105 ${apartment.status === 'occupied'
                                 ? 'bg-red-100 border-red-300 hover:border-red-500'
