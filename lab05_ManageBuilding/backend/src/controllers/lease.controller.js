@@ -5,6 +5,10 @@ const { LeaseRequest, Apartment, Floor, Building, User } = require('../models');
 const createLeaseRequest = async (req, res) => {
     try {
         const userId = req.user.id;
+        const userRole = req.user?.role?.name;
+        if (userRole && userRole !== 'resident') {
+            return res.status(403).json({ success: false, message: 'Only residents can request rent/buy' });
+        }
         const {
             apartmentId,
             type = 'rent',
