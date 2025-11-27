@@ -1,20 +1,55 @@
-const { Op } = require('sequelize');
+const Fuse = require('fuse.js');
 const { Block, Building, Floor, Apartment, User, Role } = require('../models');
 
-// Helper: build LIKE-based token filters across fields
-const buildTokenFilter = (tokens, fields) => {
-    if (!tokens.length) return {};
+const normalize = (text = '') =>
+    text
+        .toString()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase()
+        .trim();
 
-    return {
-        [Op.and]: tokens.map((token) => {
-            const pattern = `%${token}%`;
-            return {
-                [Op.or]: fields.map((field) => ({
-                    [field]: { [Op.like]: pattern }
-                }))
-            };
-        })
-    };
+const toPlain = (model) => (model?.toJSON ? model.toJSON() : model);
+
+const buildHaystack = (item, fields) =>
+    normalize(
+        fields
+            .map((field) => {
+                const value = field.split('.').reduce((acc, key) => (acc ? acc[key] : undefined), item);
+                return value ?? '';
+            })
+            .join(' ')
+    );
+
+const fuzzySearch = (items, query, options = {}) => {
+    const { limit = 20, fields = [] } = options;
+    if (!items?.length) return [];
+    const plainItems = items.map(toPlain);
+
+    // Precompute normalized haystack to improve fuzzy quality (accent-insensitive)
+    const prepared = plainItems.map((item) => ({
+        ...item,
+        _haystack: buildHaystack(item, fields)
+    }));
+
+    if (!query?.trim()) {
+        return prepared.slice(0, limit);
+    }
+
+    const fuse = new Fuse(prepared, {
+        includeScore: true,
+        threshold: 0.38,
+        distance: 120,
+        minMatchCharLength: 2,
+        ignoreLocation: true,
+        keys: ['_haystack']
+    });
+
+    const needle = normalize(query);
+    return fuse.search(needle).slice(0, limit).map(({ item, score }) => ({
+        ...item,
+        _score: score
+    }));
 };
 
 /**
@@ -22,7 +57,7 @@ const buildTokenFilter = (tokens, fields) => {
  * Query params:
  *   q: text to search
  *   types: comma list of blocks,buildings,floors,apartments,residents
- *   limit: items per entity (default 5, max 20)
+ *   limit: items per entity (default 10, max 50)
  *   blockId/buildingId/floorId: optional scoping filters
  */
 const searchAll = async (req, res) => {
@@ -30,45 +65,40 @@ const searchAll = async (req, res) => {
         const {
             q = '',
             types = '',
-            limit = 5,
+            limit = 10,
             blockId,
             buildingId,
             floorId
         } = req.query;
 
-        const tokens = q.trim().split(/\s+/).filter(Boolean);
-        const limitPerEntity = Math.min(Math.max(parseInt(limit, 10) || 5, 1), 50);
+        const limitPerEntity = Math.min(Math.max(parseInt(limit, 10) || 10, 1), 50);
 
         const availableTypes = ['blocks', 'buildings', 'floors', 'apartments', 'residents'];
         const requestedTypes = types
             ? types.split(',').map((t) => t.trim().toLowerCase()).filter((t) => availableTypes.includes(t))
             : availableTypes;
 
-        // Base filters
-        const blockFilter = { isActive: true, ...buildTokenFilter(tokens, ['name', 'blockCode', 'location', 'description']) };
+        // Base filters (only scopes + active flags). Text matching handled by Fuse.js.
+        const blockFilter = { isActive: true };
 
         const buildingFilter = {
             isActive: true,
-            ...(blockId ? { blockId } : {}),
-            ...buildTokenFilter(tokens, ['name', 'buildingCode', 'address', 'city', 'state'])
+            ...(blockId ? { blockId } : {})
         };
 
         const floorFilter = {
             isActive: true,
-            ...(buildingId ? { buildingId } : {}),
-            ...buildTokenFilter(tokens, ['floorNumber'])
+            ...(buildingId ? { buildingId } : {})
         };
 
         const apartmentFilter = {
             isActive: true,
-            ...(floorId ? { floorId } : {}),
-            ...buildTokenFilter(tokens, ['apartmentNumber', 'type', 'description'])
+            ...(floorId ? { floorId } : {})
         };
 
-        const residentFilter = {
-            ...buildTokenFilter(tokens, ['firstName', 'lastName', 'email', 'phone'])
-        };
+        const residentFilter = {};
 
+        const fetchLimit = 200; // fetch a broader set then fuzzy cut down
         const searchPromises = [];
         const result = {};
 
@@ -76,10 +106,13 @@ const searchAll = async (req, res) => {
             searchPromises.push(
                 Block.findAll({
                     where: blockFilter,
-                    limit: limitPerEntity,
+                    limit: fetchLimit,
                     order: [['updatedAt', 'DESC']]
                 }).then((blocks) => {
-                    result.blocks = blocks;
+                    result.blocks = fuzzySearch(blocks, q, {
+                        limit: limitPerEntity,
+                        fields: ['name', 'blockCode', 'location', 'description']
+                    });
                 })
             );
         }
@@ -88,13 +121,14 @@ const searchAll = async (req, res) => {
             searchPromises.push(
                 Building.findAll({
                     where: buildingFilter,
-                    include: [
-                        { model: Block, as: 'block', attributes: ['id', 'name', 'blockCode'] }
-                    ],
-                    limit: limitPerEntity,
+                    include: [{ model: Block, as: 'block', attributes: ['id', 'name', 'blockCode'] }],
+                    limit: fetchLimit,
                     order: [['updatedAt', 'DESC']]
                 }).then((buildings) => {
-                    result.buildings = buildings;
+                    result.buildings = fuzzySearch(buildings, q, {
+                        limit: limitPerEntity,
+                        fields: ['name', 'buildingCode', 'address', 'city', 'state', 'block.name', 'block.blockCode']
+                    });
                 })
             );
         }
@@ -108,13 +142,16 @@ const searchAll = async (req, res) => {
                             model: Building,
                             as: 'building',
                             attributes: ['id', 'name', 'buildingCode', 'blockId'],
-                            include: [{ model: Block, as: 'block', attributes: ['id', 'blockCode'] }]
+                            include: [{ model: Block, as: 'block', attributes: ['id', 'blockCode', 'name'] }]
                         }
                     ],
-                    limit: limitPerEntity,
+                    limit: fetchLimit,
                     order: [['floorNumber', 'ASC']]
                 }).then((floors) => {
-                    result.floors = floors;
+                    result.floors = fuzzySearch(floors, q, {
+                        limit: limitPerEntity,
+                        fields: ['floorNumber', 'building.name', 'building.buildingCode', 'building.block.blockCode']
+                    });
                 })
             );
         }
@@ -135,10 +172,13 @@ const searchAll = async (req, res) => {
                             }]
                         }
                     ],
-                    limit: limitPerEntity,
+                    limit: fetchLimit,
                     order: [['apartmentNumber', 'ASC']]
                 }).then((apartments) => {
-                    result.apartments = apartments;
+                    result.apartments = fuzzySearch(apartments, q, {
+                        limit: limitPerEntity,
+                        fields: ['apartmentNumber', 'type', 'description', 'floor.floorNumber', 'floor.building.name', 'floor.building.buildingCode']
+                    });
                 })
             );
         }
@@ -155,24 +195,34 @@ const searchAll = async (req, res) => {
                             attributes: ['id', 'name']
                         }
                     ],
-                    limit: limitPerEntity,
+                    limit: fetchLimit,
                     order: [['updatedAt', 'DESC']]
                 }).then((residents) => {
-                    result.residents = residents;
+                    result.residents = fuzzySearch(residents, q, {
+                        limit: limitPerEntity,
+                        fields: ['firstName', 'lastName', 'email', 'phone']
+                    });
                 })
             );
         }
 
         await Promise.all(searchPromises);
 
+        const stripInternal = (list = []) => list.map(({ _haystack, ...rest }) => rest);
+
         res.status(200).json({
             success: true,
             message: 'Search completed',
             query: q,
-            tokens,
             requestedTypes,
             limitPerEntity,
-            data: result
+            data: {
+                blocks: stripInternal(result.blocks),
+                buildings: stripInternal(result.buildings),
+                floors: stripInternal(result.floors),
+                apartments: stripInternal(result.apartments),
+                residents: stripInternal(result.residents)
+            }
         });
     } catch (error) {
         console.error('Error searching entities:', error);
