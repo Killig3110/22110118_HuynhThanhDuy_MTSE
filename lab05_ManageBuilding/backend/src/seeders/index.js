@@ -203,13 +203,12 @@ async function seedDatabase() {
             isActive: true,
         }));
 
-        const users = await User.bulkCreate([...coreUsersPayload, ...residentPayload]);
-        const userByEmail = (await User.findAll({
-            where: { email: [...coreUsersPayload, ...residentPayload].map((u) => u.email) }
-        })).reduce((acc, user) => {
+        const users = await User.bulkCreate([...coreUsersPayload, ...residentPayload], { returning: true });
+        const userByEmail = users.reduce((acc, user) => {
             acc[user.email] = user;
             return acc;
         }, {});
+        const residentUsers = users.filter((u) => u.roleId === roleMap.resident.id);
 
         // 6. Create multiple blocks (A, B, S)
         console.log('🏢 Creating blocks A/B/S...');
@@ -307,6 +306,11 @@ async function seedDatabase() {
                 const apartmentNumber = `${floor.floorNumber.toString().padStart(2, '0')}${aptNumber.toString().padStart(2, '0')}`;
                 const status = statusCycle[(floor.floorNumber + aptNumber) % statusCycle.length];
 
+                const isOwned = status !== 'for_sale'; // căn for_sale chưa có chủ để admin có thể niêm yết
+                const ownerCandidate = residentUsers[(floor.id + aptNumber) % residentUsers.length] || residentUsers[0];
+                const tenantCandidate = residentUsers[(floor.id + aptNumber + 3) % residentUsers.length] || residentUsers[1];
+                const isTenant = status === 'occupied';
+
                 const apartment = await Apartment.create({
                     apartmentNumber,
                     floorId: floor.id,
@@ -319,6 +323,11 @@ async function seedDatabase() {
                     monthlyRent: 3000000 + floor.floorNumber * 50000 + aptNumber * 25000,
                     maintenanceFee: 150000 + aptNumber * 5000,
                     status,
+                    ownerId: isOwned ? ownerCandidate.id : null,
+                    tenantId: isTenant ? tenantCandidate.id : null,
+                    isListedForRent: status === 'for_rent',
+                    isListedForSale: status === 'for_sale',
+                    salePrice: 1200000000 + floor.floorNumber * 20000000 + aptNumber * 5000000,
                     description: `Căn hộ ${apartmentNumber} tại tầng ${floor.floorNumber}`,
                     isActive: true,
                 });
@@ -328,25 +337,29 @@ async function seedDatabase() {
 
         // Sample lease requests
         console.log('📝 Creating sample lease requests...');
-        const sampleLease = await LeaseRequest.bulkCreate([
-            {
-                apartmentId: apartments[0]?.id,
-                userId: userByEmail['resident@building.com']?.id || users[3].id,
-                type: 'rent',
-                status: 'pending_manager',
-                startDate: '2024-12-01',
-                monthlyRent: apartments[0]?.monthlyRent || 3200000,
-                note: 'Muốn thuê 12 tháng'
-            },
-            {
-                apartmentId: apartments[1]?.id,
-                userId: userByEmail['student@building.com']?.id || users[5].id,
-                type: 'buy',
-                status: 'pending_manager',
-                totalPrice: 1500000000,
-                note: 'Đề nghị mua căn này'
-            }
-        ]);
+        const rentCandidate = apartments.find((apt) => apt.isListedForRent);
+        const saleCandidate = apartments.find((apt) => apt.isListedForSale);
+        await LeaseRequest.bulkCreate(
+            [
+                rentCandidate && {
+                    apartmentId: rentCandidate.id,
+                    userId: residentUsers[0]?.id,
+                    type: 'rent',
+                    status: 'pending_manager',
+                    startDate: '2024-12-01',
+                    monthlyRent: rentCandidate.monthlyRent,
+                    note: 'Muốn thuê 12 tháng'
+                },
+                saleCandidate && {
+                    apartmentId: saleCandidate.id,
+                    userId: residentUsers[1]?.id,
+                    type: 'buy',
+                    status: 'pending_manager',
+                    totalPrice: saleCandidate.salePrice,
+                    note: 'Đề nghị mua căn này'
+                }
+            ].filter(Boolean)
+        );
 
         // 10. Create Household Members for a subset of apartments
         console.log('👨‍👩‍👧‍👦 Creating household members...');

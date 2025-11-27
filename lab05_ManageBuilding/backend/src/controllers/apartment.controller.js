@@ -539,7 +539,7 @@ const updateApartment = async (req, res) => {
         }
 
         // Status normalization: allow only specific statuses
-        const allowedStatuses = ['vacant', 'occupied', 'maintenance', 'reserved'];
+        const allowedStatuses = ['vacant', 'occupied', 'maintenance', 'reserved', 'for_rent', 'for_sale', 'under_renovation'];
         const nextStatus = status !== undefined ? status : apartment.status;
         if (status && !allowedStatuses.includes(status)) {
             return res.status(400).json({ success: false, message: 'Invalid status value' });
