@@ -1,80 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart, Users, Building2, Home, TrendingUp, Calendar, Clock, Award } from 'lucide-react';
+import { BarChart, Users, Building2, Home, TrendingUp, Calendar, Clock, Award, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { buildingAPI, searchAPI } from '../services/api';
+import { toast } from 'react-hot-toast';
 
 const Dashboard = () => {
     const { user } = useAuth();
+    const role = user?.role?.name;
+    const [loading, setLoading] = useState(false);
+    const [stats, setStats] = useState([]);
+    const [apartmentStats, setApartmentStats] = useState({ occupied: 0, forRent: 0, forSale: 0, total: 0 });
+    const recentActivities = [];
 
-    const stats = [
-        {
-            id: 1,
-            name: 'Total Buildings',
-            value: '10',
-            change: '+0%',
-            changeType: 'neutral',
-            icon: Building2,
-        },
-        {
-            id: 2,
-            name: 'Total Apartments',
-            value: '1,600',
-            change: '+0%',
-            changeType: 'neutral',
-            icon: Home,
-        },
-        {
-            id: 3,
-            name: 'Occupied Apartments',
-            value: '24',
-            change: '+1.5%',
-            changeType: 'increase',
-            icon: Users,
-        },
-        {
-            id: 4,
-            name: 'Occupancy Rate',
-            value: '1.5%',
-            change: '+0.1%',
-            changeType: 'increase',
-            icon: TrendingUp,
-        },
-    ];
+    useEffect(() => {
+        const load = async () => {
+            try {
+                setLoading(true);
+                const buildingRes = await buildingAPI.list({ limit: 200 });
+                const buildings =
+                    buildingRes.data?.data?.buildings ||
+                    buildingRes.data?.data ||
+                    buildingRes.data?.items ||
+                    buildingRes.data ||
+                    [];
+                const pagination = buildingRes.data?.data?.pagination;
+                const buildingCount = pagination?.totalItems ?? (Array.isArray(buildings) ? buildings.length : 0);
 
-    const recentActivities = [
-        {
-            id: 1,
-            type: 'new_resident',
-            message: 'New resident moved to apartment S.01-0102',
-            time: '2 hours ago',
-            icon: Users,
-            color: 'text-green-600',
-        },
-        {
-            id: 2,
-            type: 'maintenance_request',
-            message: 'Maintenance requested for S.01 elevator',
-            time: '4 hours ago',
-            icon: Clock,
-            color: 'text-yellow-600',
-        },
-        {
-            id: 3,
-            type: 'payment_received',
-            message: 'Rent payment received from apt S.01-0101',
-            time: '1 day ago',
-            icon: TrendingUp,
-            color: 'text-blue-600',
-        },
-        {
-            id: 4,
-            type: 'visitor_registered',
-            message: 'Visitor registered for apartment S.01-0103',
-            time: '2 days ago',
-            icon: Users,
-            color: 'text-purple-600',
-        },
-    ];
+                const apartmentsRes = await searchAPI.searchApartments({ limit: 100 });
+                const apartments = apartmentsRes.data?.data || apartmentsRes.data?.items || apartmentsRes.data || [];
+                const occupied = apartments.filter((a) => a.status === 'occupied').length;
+                const forRent = apartments.filter((a) => a.isListedForRent).length;
+                const forSale = apartments.filter((a) => a.isListedForSale).length;
+                const totalApt = apartments.length;
+                setApartmentStats({ occupied, forRent, forSale, total: totalApt });
+                const occupancyRate = totalApt > 0 ? ((occupied / totalApt) * 100).toFixed(1) + '%' : '0%';
+                setStats([
+                    { id: 1, name: 'Total Buildings', value: buildingCount, change: '', changeType: 'neutral', icon: Building2 },
+                    { id: 2, name: 'Total Apartments', value: totalApt, change: '', changeType: 'neutral', icon: Home },
+                    { id: 3, name: 'Occupied Apartments', value: occupied, change: '', changeType: 'neutral', icon: Users },
+                    { id: 4, name: 'Occupancy Rate', value: occupancyRate, change: '', changeType: 'increase', icon: TrendingUp },
+                ]);
+            } catch (error) {
+                console.error('Load dashboard data failed', error);
+                toast.error('Failed to load dashboard data');
+            } finally {
+                setLoading(false);
+            }
+        };
+        load();
+    }, []);
 
     return (
         <div className="min-h-screen bg-gray-50">

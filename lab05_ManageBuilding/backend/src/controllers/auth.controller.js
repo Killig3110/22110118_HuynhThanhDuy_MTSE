@@ -33,9 +33,9 @@ const register = async (req, res) => {
             });
         }
 
-        // Default role: resident/guest (no privilege). Ignore client-provided role/position.
-        const residentRole = await Role.findOne({ where: { name: 'resident' } });
-        const defaultRoleId = residentRole ? residentRole.id : null;
+        // Default role: guest (chưa là cư dân). Ignore client-provided role/position.
+        const defaultRole = await Role.findOne({ where: { name: 'user' } });
+        const defaultRoleId = defaultRole ? defaultRole.id : null;
 
         // Create user
         const userData = {

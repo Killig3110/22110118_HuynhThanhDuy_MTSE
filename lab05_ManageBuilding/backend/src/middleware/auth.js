@@ -4,6 +4,7 @@ const { User, Role, Position } = require('../models');
 // =======================
 // AUTH MIDDLEWARE
 // =======================
+// Strict auth (401 if missing)
 const authMiddleware = async (req, res, next) => {
     try {
         let token = req.header('Authorization');
@@ -80,6 +81,47 @@ const authMiddleware = async (req, res, next) => {
             message: 'Authentication error.',
             code: 'AUTH_ERROR'
         });
+    }
+};
+
+// Optional auth: attach user if token valid, otherwise continue as guest
+const optionalAuth = async (req, res, next) => {
+    try {
+        let token = req.header('Authorization');
+        if (token && token.startsWith('Bearer ')) {
+            token = token.replace('Bearer ', '');
+        } else if (req.cookies?.token) {
+            token = req.cookies.token;
+        }
+        if (!token) {
+            req.user = null;
+            req.userRole = null;
+            return next();
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findByPk(decoded.id, {
+            include: [
+                { model: Role, as: 'role', attributes: ['id', 'name', 'description'] },
+                { model: Position, as: 'position', attributes: ['id', 'title', 'department', 'description'] }
+            ],
+            attributes: { exclude: ['password', 'resetPasswordToken', 'resetPasswordExpires'] }
+        });
+
+        if (!user || !user.isActive) {
+            req.user = null;
+            req.userRole = null;
+            return next();
+        }
+
+        req.user = user;
+        req.userRole = user.role?.name || null;
+        return next();
+    } catch (err) {
+        // ignore token errors to allow guest access
+        req.user = null;
+        req.userRole = null;
+        return next();
     }
 };
 
@@ -213,6 +255,7 @@ const requireBuildingAccess = async (req, res, next) => {
 // =======================
 module.exports = {
     authMiddleware,
+    optionalAuth,
     requireRole,
     requirePermission,
     adminMiddleware,

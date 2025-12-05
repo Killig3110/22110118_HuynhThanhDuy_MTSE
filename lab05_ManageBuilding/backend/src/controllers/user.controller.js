@@ -5,7 +5,7 @@ const { Op } = require('sequelize');
 
 const getAllUsers = async (req, res) => {
     try {
-        const { page = 1, limit = 10, search, roleId, positionId, isActive } = req.query;
+        const { page = 1, limit = 10, search, roleId, role: roleName, positionId, isActive } = req.query;
         const offset = (page - 1) * limit;
 
         // Build where clause
@@ -24,15 +24,21 @@ const getAllUsers = async (req, res) => {
         if (positionId) whereClause.positionId = positionId;
         if (isActive !== undefined) whereClause.isActive = isActive === 'true';
 
+        const roleInclude = { model: Role, as: 'role' };
+        if (roleName) {
+            roleInclude.where = { name: roleName };
+        }
+
         const { count, rows: users } = await User.findAndCountAll({
             where: whereClause,
             include: [
-                { model: Role, as: 'role' },
+                roleInclude,
                 { model: Position, as: 'position' }
             ],
             limit: parseInt(limit),
             offset: parseInt(offset),
-            order: [['createdAt', 'DESC']]
+            order: [['createdAt', 'DESC']],
+            distinct: true
         });
 
         res.json({

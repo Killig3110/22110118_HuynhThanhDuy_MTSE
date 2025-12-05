@@ -8,6 +8,7 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
+import HomePage from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import UserList from './pages/users/UserList';
@@ -25,6 +26,9 @@ import BuildingManager from './pages/admin/BuildingManager';
 import FloorManager from './pages/admin/FloorManager';
 import ApartmentManager from './pages/admin/ApartmentManager';
 import UserManager from './pages/admin/UserManager';
+import Residents from './pages/residents/Residents';
+
+const managementRoles = ['admin', 'building_manager', 'security', 'technician', 'accountant'];
 
 // Protected Route Component
 const ProtectedRoute = ({ children, requiredRole = null }) => {
@@ -39,18 +43,16 @@ const ProtectedRoute = ({ children, requiredRole = null }) => {
     }
 
     if (!user) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/home" replace />;
     }
 
     if (requiredRole) {
         const userRole = user.role?.name;
-
         if (requiredRole === 'admin' && userRole !== 'admin') {
-            return <Navigate to="/dashboard" replace />;
+            return <Navigate to="/home" replace />;
         }
-
         if (requiredRole === 'building_manager' && !['admin', 'building_manager'].includes(userRole)) {
-            return <Navigate to="/dashboard" replace />;
+            return <Navigate to="/home" replace />;
         }
     }
 
@@ -70,7 +72,9 @@ const PublicRoute = ({ children }) => {
     }
 
     if (user) {
-        return <Navigate to="/dashboard" replace />;
+        const role = user.role?.name;
+        const target = managementRoles.includes(role) ? '/dashboard' : '/home';
+        return <Navigate to={target} replace />;
     }
 
     return children;
@@ -96,6 +100,7 @@ function App() {
             <Router>
                 <AppLayout>
                     <Routes>
+                        <Route path="/home" element={<HomePage />} />
                         {/* Public Routes */}
                         <Route
                             path="/login"
@@ -178,17 +183,13 @@ function App() {
                         <Route
                             path="/buildings"
                             element={
-                                <ProtectedRoute>
-                                    <BuildingList />
-                                </ProtectedRoute>
+                                <BuildingList />
                             }
                         />
                         <Route
                             path="/buildings/map"
                             element={
-                                <ProtectedRoute>
-                                    <InteractiveBuildingMap />
-                                </ProtectedRoute>
+                                <InteractiveBuildingMap />
                             }
                         />
                         <Route
@@ -210,9 +211,7 @@ function App() {
                         <Route
                             path="/marketplace"
                             element={
-                                <ProtectedRoute>
-                                    <Marketplace />
-                                </ProtectedRoute>
+                                <Marketplace />
                             }
                         />
                         <Route
@@ -228,6 +227,14 @@ function App() {
                             element={
                                 <ProtectedRoute>
                                     <MyApartments />
+                                </ProtectedRoute>
+                            }
+                        />
+                        <Route
+                            path="/residents"
+                            element={
+                                <ProtectedRoute requiredRole="building_manager">
+                                    <Residents />
                                 </ProtectedRoute>
                             }
                         />
@@ -273,8 +280,7 @@ function App() {
                         />
 
                         {/* Default Routes */}
-                        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+                        <Route path="*" element={<Navigate to="/home" replace />} />
                     </Routes>
 
                     {/* Toast Notifications */}

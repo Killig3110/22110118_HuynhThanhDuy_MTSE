@@ -17,7 +17,7 @@ const LeaseRequest = sequelize.define('LeaseRequest', {
     },
     userId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,
         references: {
             model: 'Users',
             key: 'id'
@@ -46,6 +46,18 @@ const LeaseRequest = sequelize.define('LeaseRequest', {
     },
     totalPrice: {
         type: DataTypes.DECIMAL(12, 2),
+        allowNull: true
+    },
+    contactName: {
+        type: DataTypes.STRING(120),
+        allowNull: true
+    },
+    contactEmail: {
+        type: DataTypes.STRING(120),
+        allowNull: true
+    },
+    contactPhone: {
+        type: DataTypes.STRING(50),
         allowNull: true
     },
     note: {

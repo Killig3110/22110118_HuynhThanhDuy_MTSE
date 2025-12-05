@@ -6,6 +6,8 @@ import * as yup from 'yup';
 import { Eye, EyeOff, Mail, Lock, User, Phone, MapPin, Calendar, UserPlus } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
+const managementRoles = ['admin', 'building_manager', 'security', 'technician', 'accountant'];
+
 const schema = yup.object({
     firstName: yup
         .string()
@@ -60,7 +62,9 @@ const Register = () => {
         const result = await registerUser(userData);
 
         if (result.success) {
-            navigate('/dashboard');
+            const role = result.user?.role?.name;
+            const target = managementRoles.includes(role) ? '/dashboard' : '/home';
+            navigate(target);
         } else {
             // map backend validation errors to fields
             if (result.errors && Array.isArray(result.errors)) {

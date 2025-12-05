@@ -42,20 +42,28 @@ const Marketplace = () => {
     }, [filters.listing]);
 
     const request = async (apt, mode) => {
+        let payload = {
+            apartmentId: apt.id,
+            type: mode,
+            note: ''
+        };
+
+        // guest flow: collect contact info
         if (!user) {
-            toast.error('Please login to submit request');
-            return;
-        }
-        if (user?.role?.name !== 'resident') {
+            const contactName = window.prompt('Nhập họ tên liên hệ');
+            const contactEmail = window.prompt('Nhập email liên hệ');
+            const contactPhone = window.prompt('Nhập số điện thoại liên hệ');
+            if (!contactName || !contactEmail || !contactPhone) {
+                toast.error('Vui lòng nhập đầy đủ thông tin liên hệ');
+                return;
+            }
+            payload = { ...payload, contactName, contactEmail, contactPhone };
+        } else if (user?.role?.name !== 'resident') {
             toast.error('Only residents can submit rent/buy requests');
             return;
         }
+
         try {
-            const payload = {
-                apartmentId: apt.id,
-                type: mode,
-                note: ''
-            };
             if (mode === 'rent') payload.monthlyRent = apt.monthlyRent;
             if (mode === 'buy') payload.totalPrice = apt.salePrice;
             await leaseAPI.create(payload);

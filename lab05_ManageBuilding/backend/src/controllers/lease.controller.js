@@ -1,14 +1,11 @@
 const { Op } = require('sequelize');
-const { LeaseRequest, Apartment, Floor, Building, User } = require('../models');
+const { LeaseRequest, Apartment, Floor, Building, User, Role } = require('../models');
 
-// Create a new lease/purchase request (resident)
+// Create a new lease/purchase request (resident or guest with contact info)
 const createLeaseRequest = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user?.id || null;
         const userRole = req.user?.role?.name;
-        if (userRole && userRole !== 'resident') {
-            return res.status(403).json({ success: false, message: 'Only residents can request rent/buy' });
-        }
         const {
             apartmentId,
             type = 'rent',
@@ -16,8 +13,20 @@ const createLeaseRequest = async (req, res) => {
             endDate,
             monthlyRent,
             totalPrice,
-            note
+            note,
+            contactName,
+            contactEmail,
+            contactPhone
         } = req.body;
+
+        if (userRole && userRole !== 'resident') {
+            return res.status(403).json({ success: false, message: 'Only residents can request rent/buy' });
+        }
+        if (!userId) {
+            if (!contactName || !contactEmail || !contactPhone) {
+                return res.status(400).json({ success: false, message: 'Contact info is required for guest requests' });
+            }
+        }
 
         const apartment = await Apartment.findByPk(apartmentId, {
             include: [
@@ -62,6 +71,9 @@ const createLeaseRequest = async (req, res) => {
             monthlyRent,
             totalPrice,
             note,
+            contactName: contactName || `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || null,
+            contactEmail: contactEmail || req.user?.email || null,
+            contactPhone: contactPhone || req.user?.phone || null,
             status: nextStatus
         });
 
@@ -188,15 +200,52 @@ const decideLeaseRequest = async (req, res) => {
         });
 
         // Update apartment assignment and listing flags
+        // Ensure requester exists (guest request may have null userId)
+        let requesterId = lease.userId;
+        if (!requesterId) {
+            // Try to find existing user by contact email; otherwise create resident account
+            if (!lease.contactEmail) {
+                return res.status(400).json({ success: false, message: 'Missing requester info to approve' });
+            }
+            const existing = await User.findOne({ where: { email: lease.contactEmail } });
+            if (existing) {
+                requesterId = existing.id;
+            } else {
+                const [firstName = '', lastName = ''] = (lease.contactName || 'Guest User').split(' ');
+                const newUser = await User.create({
+                    firstName: firstName || 'Guest',
+                    lastName: lastName || 'User',
+                    email: lease.contactEmail,
+                    phone: lease.contactPhone || null,
+                    // generate a simple temp password; should be reset flow in real apps
+                    password: 'Temp123!',
+                    roleId: (await Role.findOne({ where: { name: 'resident' } }))?.id || null,
+                    isActive: true
+                });
+                requesterId = newUser.id;
+            }
+        }
+
+        // Upgrade role to resident if needed
+        if (requesterId) {
+            const requester = await User.findByPk(requesterId, { include: [{ model: Role, as: 'role' }] });
+            if (requester && requester.role?.name !== 'resident') {
+                const residentRole = await Role.findOne({ where: { name: 'resident' } });
+                if (residentRole) {
+                    await requester.update({ roleId: residentRole.id });
+                }
+            }
+        }
+
         if (lease.type === 'rent') {
             await lease.apartment.update({
-                tenantId: lease.userId,
+                tenantId: requesterId,
                 status: 'occupied',
                 isListedForRent: false
             });
         } else if (lease.type === 'buy') {
             await lease.apartment.update({
-                ownerId: lease.userId,
+                ownerId: requesterId,
                 tenantId: null,
                 status: 'occupied',
                 isListedForSale: false,

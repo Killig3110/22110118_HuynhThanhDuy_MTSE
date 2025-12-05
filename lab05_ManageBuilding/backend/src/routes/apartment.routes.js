@@ -11,6 +11,7 @@ const {
 } = require('../controllers/apartment.controller');
 const {
     authMiddleware,
+    optionalAuth,
     requireRole,
     managerMiddleware
 } = require('../middleware/auth');
@@ -98,7 +99,7 @@ const validateSearchFilters = [
  */
 router.get('/search',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     validateSearchFilters,
     searchApartments
 );
@@ -110,7 +111,7 @@ router.get('/search',
  */
 router.get('/:id',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getApartmentById
 );
 

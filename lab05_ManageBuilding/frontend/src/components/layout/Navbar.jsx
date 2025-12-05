@@ -8,13 +8,20 @@ const Navbar = () => {
     const role = user?.role?.name;
 
     const mainLinks = useMemo(() => {
-        const links = [
-            { to: '/dashboard', label: 'Dashboard', icon: Home, show: true },
-            { to: '/buildings', label: 'Buildings', icon: Building2, show: true },
-            { to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true },
-            { to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true },
-            { to: '/search', label: 'Search', icon: Search, show: true },
-        ];
+        const links = [];
+
+        if (!user) {
+            links.push({ to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true });
+            links.push({ to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true });
+            return links;
+        }
+
+        // Authenticated users
+        links.push({ to: '/dashboard', label: 'Dashboard', icon: Home, show: true });
+        links.push({ to: '/buildings', label: 'Buildings', icon: Building2, show: role !== 'guest' });
+        links.push({ to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true });
+        links.push({ to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true });
+        links.push({ to: '/search', label: 'Search', icon: Search, show: true });
 
         if (role === 'resident') {
             links.push({ to: '/my-requests', label: 'My Requests', icon: ClipboardList, show: true });
@@ -31,7 +38,7 @@ const Navbar = () => {
         }
 
         return links;
-    }, [role]);
+    }, [role, user]);
 
     const handleLogout = () => {
         logout();
@@ -176,91 +183,29 @@ const Navbar = () => {
             {/* Mobile menu - hidden by default */}
             <div className="md:hidden" id="mobile-menu">
                 <div className="pt-2 pb-3 space-y-1 bg-white border-t border-gray-200">
-                    <Link
-                        to="/dashboard"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-900 hover:text-blue-600 hover:bg-gray-50 transition-colors"
-                    >
-                        <Home className="h-5 w-5 mr-3" />
-                        Dashboard
-                    </Link>
-
-                    <Link
-                        to="/buildings"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                        <Building2 className="h-5 w-5 mr-3" />
-                        Buildings
-                    </Link>
-                    <Link
-                        to="/search"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                        <Search className="h-5 w-5 mr-3" />
-                        Search
-                    </Link>
-                    <Link
-                        to="/leases"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                        <ClipboardList className="h-5 w-5 mr-3" />
-                        Leases
-                    </Link>
-                    <Link
-                        to="/marketplace"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                        <ShoppingBag className="h-5 w-5 mr-3" />
-                        Marketplace
-                    </Link>
-                    <Link
-                        to="/my-requests"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                        <ClipboardList className="h-5 w-5 mr-3" />
-                        My Requests
-                    </Link>
-                    <Link
-                        to="/my-apartments"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                    >
-                        <HomeIcon className="h-5 w-5 mr-3" />
-                        My Apartments
-                    </Link>
-
-                    {(user?.role?.name === 'admin' || user?.role?.name === 'building_manager') && (
+                    {mainLinks.filter((l) => l.show).map((link) => (
                         <Link
-                            to="/residents"
-                            className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                            key={link.to}
+                            to={link.to}
+                            className="flex items-center px-3 py-2 text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors"
                         >
-                            <Users className="h-5 w-5 mr-3" />
-                            Residents
+                            <link.icon className="h-5 w-5 mr-3" />
+                            {link.label}
                         </Link>
-                    )}
-
-                    {user?.role?.name === 'admin' && (
-                        <Link
-                            to="/management"
-                            className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
-                        >
-                            <UserPlus className="h-5 w-5 mr-3" />
-                            Management
-                        </Link>
-                    )}
-
+                    ))}
                     <Link
                         to="/profile"
-                        className="flex items-center px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                        className="flex items-center px-3 py-2 text-base font-medium text-gray-600 hover:text-blue-600 hover:bg-gray-50 transition-colors"
                     >
                         <User className="h-5 w-5 mr-3" />
                         Profile
                     </Link>
-
                     <button
                         onClick={handleLogout}
-                        className="flex items-center w-full px-3 py-2 text-base font-medium text-gray-500 hover:text-gray-900 hover:bg-gray-50 transition-colors"
+                        className="flex items-center w-full px-3 py-2 text-base font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 transition-colors"
                     >
                         <LogOut className="h-5 w-5 mr-3" />
-                        Sign out
+                        Logout
                     </button>
                 </div>
             </div>

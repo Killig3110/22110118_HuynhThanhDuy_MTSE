@@ -18,6 +18,7 @@ const {
 } = require('../controllers/apartment.controller');
 const {
     authMiddleware,
+    optionalAuth,
     requireRole,
     managerMiddleware,
     requireBuildingAccess
@@ -86,34 +87,34 @@ const validateBuildingUpdate = [
 // Public routes (with authentication)
 router.get('/',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getBuildings
 );
 
 router.get('/:id',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     requireBuildingAccess,
     getBuildingById
 );
 
 router.get('/:buildingId/floors',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     requireBuildingAccess,
     getFloorsFromFloorController
 );
 
 router.get('/floors/:floorId/apartments',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getApartmentsFromApartmentController
 );
 
 // Get all apartments by building
 router.get('/:buildingId/apartments',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getApartmentsByBuilding
 );
 

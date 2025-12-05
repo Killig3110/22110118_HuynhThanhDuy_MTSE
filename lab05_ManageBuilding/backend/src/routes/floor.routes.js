@@ -9,6 +9,7 @@ const {
 } = require('../controllers/floor.controller');
 const {
     authMiddleware,
+    optionalAuth,
     requireRole,
     managerMiddleware
 } = require('../middleware/auth');
@@ -46,7 +47,7 @@ const validateFloor = [
  */
 router.get('/:id',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getFloorById
 );
 
