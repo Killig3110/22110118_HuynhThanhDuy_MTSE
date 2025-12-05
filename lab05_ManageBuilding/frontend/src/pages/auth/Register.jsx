@@ -62,6 +62,17 @@ const Register = () => {
         if (result.success) {
             navigate('/dashboard');
         } else {
+            // map backend validation errors to fields
+            if (result.errors && Array.isArray(result.errors)) {
+                result.errors.forEach((err) => {
+                    if (err.field) {
+                        setError(err.field, {
+                            type: 'server',
+                            message: err.message || 'Invalid value'
+                        });
+                    }
+                });
+            }
             setError('root', {
                 type: 'manual',
                 message: result.message || 'Registration failed'
