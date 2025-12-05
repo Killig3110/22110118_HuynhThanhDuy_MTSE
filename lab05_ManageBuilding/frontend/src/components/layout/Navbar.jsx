@@ -5,18 +5,33 @@ import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin, Sea
 
 const Navbar = () => {
     const { user, logout } = useAuth();
-    const mainLinks = useMemo(() => ([
-        { to: '/dashboard', label: 'Dashboard', icon: Home, show: true },
-        { to: '/buildings', label: 'Buildings', icon: Building2, show: true },
-        { to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true },
-        { to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true },
-        { to: '/search', label: 'Search', icon: Search, show: true },
-        { to: '/leases', label: 'Leases', icon: ClipboardList, show: true },
-        { to: '/my-requests', label: 'My Requests', icon: ClipboardList, show: !!user },
-        { to: '/my-apartments', label: 'My Apartments', icon: HomeIcon, show: !!user },
-        { to: '/residents', label: 'Residents', icon: Users, show: ['admin', 'building_manager'].includes(user?.role?.name) },
-        { to: '/management', label: 'User Management', icon: UserPlus, show: user?.role?.name === 'admin' },
-    ]), [user]);
+    const role = user?.role?.name;
+
+    const mainLinks = useMemo(() => {
+        const links = [
+            { to: '/dashboard', label: 'Dashboard', icon: Home, show: true },
+            { to: '/buildings', label: 'Buildings', icon: Building2, show: true },
+            { to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true },
+            { to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true },
+            { to: '/search', label: 'Search', icon: Search, show: true },
+        ];
+
+        if (role === 'resident') {
+            links.push({ to: '/my-requests', label: 'My Requests', icon: ClipboardList, show: true });
+            links.push({ to: '/my-apartments', label: 'My Apartments', icon: HomeIcon, show: true });
+        }
+
+        if (['admin', 'building_manager'].includes(role)) {
+            links.push({ to: '/leases', label: 'Leases', icon: ClipboardList, show: true });
+            links.push({ to: '/residents', label: 'Residents', icon: Users, show: true });
+        }
+
+        if (role === 'admin') {
+            links.push({ to: '/management', label: 'User Management', icon: UserPlus, show: true });
+        }
+
+        return links;
+    }, [role]);
 
     const handleLogout = () => {
         logout();
@@ -54,7 +69,7 @@ const Navbar = () => {
                                     <button className="inline-flex items-center px-2 py-1 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors border border-gray-200 rounded-md">
                                         More
                                     </button>
-                                    <div className="absolute left-0 mt-2 w-48 bg-white shadow-lg border border-gray-200 rounded-md py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                                    <div className="absolute left-0 mt-2 w-52 bg-white shadow-lg border border-gray-200 rounded-md py-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
                                         {mainLinks.slice(5).map((link) => (
                                             link.show && (
                                                 <Link

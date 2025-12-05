@@ -46,6 +46,10 @@ const Marketplace = () => {
             toast.error('Please login to submit request');
             return;
         }
+        if (user?.role?.name !== 'resident') {
+            toast.error('Only residents can submit rent/buy requests');
+            return;
+        }
         try {
             const payload = {
                 apartmentId: apt.id,
@@ -123,7 +127,8 @@ const Marketplace = () => {
                             {apt.isListedForRent && (
                                 <button
                                     onClick={() => request(apt, 'rent')}
-                                    className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                                    className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
+                                    disabled={user?.role?.name !== 'resident'}
                                 >
                                     Request Rent
                                 </button>
@@ -131,12 +136,16 @@ const Marketplace = () => {
                             {apt.isListedForSale && (
                                 <button
                                     onClick={() => request(apt, 'buy')}
-                                    className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700"
+                                    className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 disabled:opacity-50"
+                                    disabled={user?.role?.name !== 'resident'}
                                 >
                                     Request Buy
                                 </button>
                             )}
                         </div>
+                        {user?.role?.name !== 'resident' && (
+                            <p className="mt-2 text-xs text-amber-600">Chỉ cư dân mới có thể gửi yêu cầu.</p>
+                        )}
                     </div>
                 ))}
             </div>

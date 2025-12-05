@@ -107,13 +107,14 @@ export const AuthProvider = ({ children }) => {
                 return { success: true };
             } else {
                 toast.error(response.data.message || 'Registration failed');
-                return { success: false, message: response.data.message };
+                return { success: false, message: response.data.message, errors: response.data.errors };
             }
         } catch (error) {
             console.error('Registration error:', error);
             const message = error.response?.data?.message || 'Registration failed';
+            const errors = error.response?.data?.errors;
             toast.error(message);
-            return { success: false, message };
+            return { success: false, message, errors };
         } finally {
             setIsLoading(false);
         }
