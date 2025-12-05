@@ -22,7 +22,7 @@ const generateResetToken = () => {
 
 const register = async (req, res) => {
     try {
-        const { firstName, lastName, email, password, phone, address, dateOfBirth, roleId, positionId } = req.body;
+        const { firstName, lastName, email, password, phone, address, dateOfBirth } = req.body;
 
         // Check if user already exists
         const existingUser = await User.findOne({ where: { email } });
@@ -33,27 +33,9 @@ const register = async (req, res) => {
             });
         }
 
-        // Validate role and position if provided
-        let role = null, position = null;
-        if (roleId) {
-            role = await Role.findByPk(roleId);
-            if (!role || !role.isActive) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid role selected'
-                });
-            }
-        }
-
-        if (positionId) {
-            position = await Position.findByPk(positionId);
-            if (!position || !position.isActive) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Invalid position selected'
-                });
-            }
-        }
+        // Default role: resident/guest (no privilege). Ignore client-provided role/position.
+        const residentRole = await Role.findOne({ where: { name: 'resident' } });
+        const defaultRoleId = residentRole ? residentRole.id : null;
 
         // Create user
         const userData = {
@@ -64,8 +46,8 @@ const register = async (req, res) => {
             phone,
             address,
             dateOfBirth,
-            roleId: roleId || null,
-            positionId: positionId || null
+            roleId: defaultRoleId,
+            positionId: null
         };
 
         const user = await User.create(userData);
