@@ -35,7 +35,7 @@ const CheckoutPage = () => {
 
         try {
             const result = await checkout();
-            
+
             if (result.success) {
                 setOrderComplete(true);
                 toast.success(`Successfully created ${result.data.count} lease request(s)!`);

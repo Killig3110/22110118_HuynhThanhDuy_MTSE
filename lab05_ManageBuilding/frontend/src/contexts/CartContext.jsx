@@ -282,9 +282,9 @@ export const CartProvider = ({ children }) => {
             if (response.data.success) {
                 await fetchCart(); // Refresh cart (selected items should be removed)
                 toast.success(response.data.message);
-                return { 
-                    success: true, 
-                    data: response.data.data 
+                return {
+                    success: true,
+                    data: response.data.data
                 };
             }
         } catch (err) {
