@@ -47,6 +47,13 @@ const DashboardNew = () => {
         try {
             setLoading(true);
 
+            // Check if user is loaded
+            if (!user) {
+                console.warn('User not loaded yet');
+                setLoading(false);
+                return;
+            }
+
             // Load buildings
             const buildingRes = await buildingAPI.list({ limit: 200 });
             const buildings = buildingRes.data?.data?.buildings || buildingRes.data?.data || [];
@@ -73,8 +80,22 @@ const DashboardNew = () => {
                 occupancyRate: parseFloat(occupancyRate),
             });
         } catch (error) {
-            console.error('Failed to load dashboard data:', error);
-            toast.error('Failed to load dashboard data');
+            console.error('Error loading dashboard data:', error);
+            if (error.isNetworkError) {
+                toast.error('Không thể kết nối đến server. Vui lòng thử lại sau.');
+            } else {
+                toast.error(error.response?.data?.message || 'Không thể tải dữ liệu dashboard');
+            }
+            // Set default values to prevent undefined errors
+            setStats({
+                buildings: 0,
+                apartments: 0,
+                occupied: 0,
+                available: 0,
+                forRent: 0,
+                forSale: 0,
+                occupancyRate: 0,
+            });
         } finally {
             setLoading(false);
         }

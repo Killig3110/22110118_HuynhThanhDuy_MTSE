@@ -203,7 +203,7 @@ const listLeaseRequests = async (req, res) => {
 
 // Approve / reject (with database transaction for data consistency)
 const decideLeaseRequest = async (req, res) => {
-    const { sequelize } = require('../models');
+    const { sequelize } = require('../config/database');
     const transaction = await sequelize.transaction();
 
     try {

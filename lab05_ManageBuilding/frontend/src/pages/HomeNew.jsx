@@ -122,9 +122,9 @@ const HomePage = () => {
                                     </Link>
                                     <Link
                                         to="/buildings/map"
-                                        className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
+                                        className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
                                     >
-                                        <MapPin className="h-6 w-6 mr-2" />
+                                        <MapPin className="h-6 w-6 mr-2 " />
                                         Explore 3D Map
                                     </Link>
                                 </>
@@ -292,7 +292,7 @@ const HomePage = () => {
                         {!user && (
                             <Link
                                 to="/login"
-                                className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
+                                className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-black rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
                             >
                                 Already have an account?
                             </Link>

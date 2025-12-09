@@ -101,7 +101,6 @@ router.get('/:id',
 router.get('/:buildingId/floors',
     generalLimiter,
     optionalAuth,
-    requireBuildingAccess,
     getFloorsFromFloorController
 );
 
