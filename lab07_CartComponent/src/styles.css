@@ -35,3 +35,151 @@
 .bm-cart-summary {
   background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
 }
+
+/* Enhanced Cart Components */
+.bm-apartment-detail {
+  border: 2px solid #e5e7eb;
+  transition: all 0.3s ease;
+}
+
+.bm-apartment-detail:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.1);
+}
+
+.bm-lease-term-selector {
+  transition: all 0.2s ease;
+}
+
+.bm-lease-term-selector input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.bm-lease-term-selector input[type="range"]::-webkit-slider-track {
+  background: #dbeafe;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.bm-lease-term-selector input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+.bm-lease-term-selector input[type="range"]::-webkit-slider-thumb:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
+}
+
+.bm-lease-term-selector input[type="range"]::-moz-range-track {
+  background: #dbeafe;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.bm-lease-term-selector input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 3px solid #fff;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  transition: all 0.2s ease;
+}
+
+.bm-lease-term-selector input[type="range"]::-moz-range-thumb:hover {
+  background: #2563eb;
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
+}
+
+.bm-lease-term-selector input[type="range"]:disabled::-webkit-slider-thumb {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.bm-lease-term-selector input[type="range"]:disabled::-moz-range-thumb {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.bm-payment-breakdown {
+  border: 2px solid #e5e7eb;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+}
+
+/* Smooth transitions for dynamic content */
+.bm-cart-card>div,
+.bm-apartment-detail>div,
+.bm-payment-breakdown>div {
+  transition: all 0.2s ease;
+}
+
+/* Loading state */
+.bm-cart-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 48px;
+  color: #6b7280;
+}
+
+.bm-cart-loading::after {
+  content: '';
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: bm-spin 0.8s linear infinite;
+}
+
+/* Error state */
+.bm-cart-error {
+  padding: 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Success message */
+.bm-cart-success {
+  padding: 16px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #16a34a;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .bm-apartment-detail img {
+    height: 180px;
+  }
+
+  .bm-lease-term-selector {
+    padding: 12px;
+  }
+
+  .bm-payment-breakdown {
+    font-size: 13px;
+  }
+}

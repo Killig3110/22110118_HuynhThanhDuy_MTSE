@@ -29,12 +29,34 @@ const CartItemCard = ({
   image,
   selectable = false,
   selected = false,
-  onSelectToggle
+  onSelectToggle,
+  // NEW: Location hierarchy
+  block,
+  building,
+  floor,
+  // NEW: Apartment details
+  bedrooms,
+  bathrooms,
+  balconies,
+  parkingSlots,
+  // NEW: Amenities
+  amenities = [],
+  // NEW: Financial details
+  maintenanceFee = 0,
+  deposit = 0,
+  // NEW: Lease terms
+  minLeaseTerm = 1,
+  maxLeaseTerm = 36
 }) => {
   const handleChange = (delta) => {
-    const next = Math.max(1, months + delta);
+    const next = Math.max(minLeaseTerm, Math.min(maxLeaseTerm, months + delta));
     onMonthsChange?.(next);
   };
+
+  const totalPrice = mode === 'rent' ? price * months : price;
+  const totalDeposit = mode === 'rent' ? deposit : 0;
+  const totalMaintenance = mode === 'rent' ? maintenanceFee * months : maintenanceFee * 12;
+  const grandTotal = totalPrice + totalDeposit + totalMaintenance;
 
   return (
     <Card
@@ -74,6 +96,14 @@ const CartItemCard = ({
           {status}
         </span>
       </div>
+
+      {/* Location Hierarchy */}
+      {(block || building || floor) && (
+        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
+          📍 {[block, building, floor].filter(Boolean).join(' › ')}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 12, fontSize: 13, color: '#4b5563', alignItems: 'center' }}>
         {selectable && (
           <input type="checkbox" checked={selected} onChange={onSelectToggle} />
@@ -84,6 +114,70 @@ const CartItemCard = ({
         <span>{type?.toUpperCase()}</span>
         <span>• {area} m²</span>
       </div>
+
+      {/* Apartment Details */}
+      {(bedrooms || bathrooms || balconies || parkingSlots) && (
+        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#6b7280', marginTop: 8, flexWrap: 'wrap' }}>
+          {bedrooms && <span>🛏️ {bedrooms} BR</span>}
+          {bathrooms && <span>🚿 {bathrooms} BA</span>}
+          {balconies > 0 && <span>🌅 {balconies} Balcony</span>}
+          {parkingSlots > 0 && <span>🚗 {parkingSlots} Parking</span>}
+        </div>
+      )}
+
+      {/* Amenities */}
+      {amenities.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
+          {amenities.slice(0, 5).map((amenity, idx) => (
+            <span key={idx} style={{
+              padding: '2px 8px',
+              background: '#f3f4f6',
+              color: '#6b7280',
+              fontSize: 11,
+              borderRadius: 4,
+              border: '1px solid #e5e7eb'
+            }}>
+              {amenity}
+            </span>
+          ))}
+          {amenities.length > 5 && (
+            <span style={{ fontSize: 11, color: '#9ca3af' }}>+{amenities.length - 5} more</span>
+          )}
+        </div>
+      )}
+
+      {/* Financial Breakdown */}
+      {(maintenanceFee > 0 || deposit > 0) && (
+        <div style={{ marginTop: 12, padding: 8, background: '#f9fafb', borderRadius: 6, fontSize: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+            <span style={{ color: '#6b7280' }}>{mode === 'rent' ? 'Monthly rent' : 'Sale price'}:</span>
+            <span style={{ fontWeight: 600 }}>{formatPrice(price)} đ{mode === 'rent' ? '/mo' : ''}</span>
+          </div>
+          {mode === 'rent' && months > 1 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ color: '#6b7280' }}>Duration:</span>
+              <span style={{ fontWeight: 600 }}>{months} months</span>
+            </div>
+          )}
+          {deposit > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ color: '#6b7280' }}>Deposit:</span>
+              <span style={{ fontWeight: 600 }}>{formatPrice(totalDeposit)} đ</span>
+            </div>
+          )}
+          {maintenanceFee > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+              <span style={{ color: '#6b7280' }}>Maintenance:</span>
+              <span style={{ fontWeight: 600 }}>{formatPrice(totalMaintenance)} đ</span>
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 8, paddingTop: 8, borderTop: '1px solid #e5e7eb' }}>
+            <span style={{ color: '#111827', fontWeight: 600 }}>Total:</span>
+            <span style={{ color: '#059669', fontWeight: 700 }}>{formatPrice(grandTotal)} đ</span>
+          </div>
+        </div>
+      )}
+
       {note && <div style={{ marginTop: 8, fontSize: 12, color: '#6b7280' }}>{note}</div>}
     </Card>
   );

@@ -13,6 +13,7 @@ const floorRoutes = require('./routes/floor.routes');
 const apartmentRoutes = require('./routes/apartment.routes');
 const searchRoutes = require('./routes/search.routes');
 const leaseRoutes = require('./routes/lease.routes');
+const cartRoutes = require('./routes/cart.routes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/validation');
@@ -96,6 +97,7 @@ app.use('/api/floors', floorRoutes);
 app.use('/api/apartments', apartmentRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/leases', leaseRoutes);
+app.use('/api/cart', cartRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
