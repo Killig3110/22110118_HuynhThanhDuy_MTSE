@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { ShoppingCart } from 'lucide-react';
 
-const ApartmentCard = ({ apartment, onClick, canEdit, onEdit, onDelete, onContextMenu }) => {
+const ApartmentCard = ({ apartment, onClick, canEdit, onEdit, onDelete, onContextMenu, onAddToCart }) => {
     const [menuOpen, setMenuOpen] = useState(false);
 
     return (
@@ -81,7 +82,22 @@ const ApartmentCard = ({ apartment, onClick, canEdit, onEdit, onDelete, onContex
                         <div className="font-semibold">💰 ${apartment.monthlyRent.toLocaleString()}/month</div>
                     )}
                 </div>
-                <div className="mt-4 text-center text-xs opacity-70">
+
+                {/* Add to Cart Button */}
+                {onAddToCart && apartment.status === 'vacant' && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onAddToCart(apartment);
+                        }}
+                        className="mt-3 w-full flex items-center justify-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg font-semibold hover:bg-opacity-90 transition-all"
+                    >
+                        <ShoppingCart className="h-4 w-4" />
+                        Add to Cart
+                    </button>
+                )}
+
+                <div className="mt-2 text-center text-xs opacity-70">
                     Click for detailed information
                 </div>
             </div>

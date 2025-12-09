@@ -1,13 +1,27 @@
 {
   "name": "lab07_cartcomponent",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Thư viện component React đầy đủ cho hệ thống giỏ hàng thuê/mua căn hộ, tích hợp với lab05_ManageBuilding.",
-  "main": "index.js",
+  "main": "src/index.js",
+  "module": "src/index.js",
+  "files": [
+    "src",
+    "README.md"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "react",
+    "cart",
+    "shopping-cart",
+    "apartment",
+    "rental"
+  ],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "peerDependencies": {
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  }
 }

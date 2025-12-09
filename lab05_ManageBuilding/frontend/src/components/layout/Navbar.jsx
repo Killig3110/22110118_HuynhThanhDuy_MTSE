@@ -1,10 +1,12 @@
 import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin, Search, ClipboardList, ShoppingBag, HomeIcon } from 'lucide-react';
+import { useCart } from '../../contexts/CartContext';
+import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin, Search, ClipboardList, ShoppingBag, HomeIcon, ShoppingCart } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
+    const { cartItemCount } = useCart();
     const role = user?.role?.name;
 
     const mainLinks = useMemo(() => {
@@ -97,6 +99,22 @@ const Navbar = () => {
 
                     {/* Right side - User menu */}
                     <div className="flex items-center space-x-4">
+                        {/* Cart Icon with Badge */}
+                        {user && (
+                            <Link
+                                to="/cart"
+                                className="relative p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                <span className="sr-only">View cart</span>
+                                <ShoppingCart className="h-6 w-6" />
+                                {cartItemCount > 0 && (
+                                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">
+                                        {cartItemCount > 9 ? '9+' : cartItemCount}
+                                    </span>
+                                )}
+                            </Link>
+                        )}
+
                         {/* Notifications */}
                         <button className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             <span className="sr-only">View notifications</span>

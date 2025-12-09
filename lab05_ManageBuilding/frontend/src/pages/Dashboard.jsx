@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { BarChart, Users, Building2, Home, TrendingUp, Calendar, Clock, Award, ShoppingBag } from 'lucide-react';
+import { BarChart, Users, Building2, Home, TrendingUp, Calendar, Clock, Award, ShoppingBag, ShoppingCart, ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { buildingAPI, searchAPI } from '../services/api';
 import { toast } from 'react-hot-toast';
 
@@ -168,6 +169,9 @@ const Dashboard = () => {
                     </div>
                 )}
 
+                {/* My Cart Widget */}
+                <MyCartWidget />
+
                 {/* Quick Actions */}
                 <div className="px-4 sm:px-0 mb-8">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
@@ -287,6 +291,66 @@ const Dashboard = () => {
                                 })}
                             </ul>
                         </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// MyCart Widget Component
+const MyCartWidget = () => {
+    const { cartItems, calculateTotals, isLoading } = useCart();
+    const totals = calculateTotals();
+
+    if (isLoading) {
+        return null;
+    }
+
+    if (cartItems.length === 0) {
+        return null;
+    }
+
+    return (
+        <div className="px-4 sm:px-0 mb-8">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+                <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center">
+                        <ShoppingCart className="h-8 w-8 mr-3" />
+                        <h3 className="text-xl font-bold">My Cart</h3>
+                    </div>
+                    <Link
+                        to="/cart"
+                        className="flex items-center text-sm font-medium hover:text-blue-100 transition-colors"
+                    >
+                        View Cart
+                        <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                        <p className="text-sm opacity-90 mb-1">Total Items</p>
+                        <p className="text-3xl font-bold">{totals.totalItems}</p>
+                    </div>
+                    <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                        <p className="text-sm opacity-90 mb-1">Selected Items</p>
+                        <p className="text-3xl font-bold">{totals.selectedItems}</p>
+                    </div>
+                    <div className="bg-white bg-opacity-20 rounded-lg p-4">
+                        <p className="text-sm opacity-90 mb-1">Total Value</p>
+                        <p className="text-2xl font-bold">${totals.grandTotal.toLocaleString()}</p>
+                    </div>
+                </div>
+
+                {totals.selectedItems > 0 && (
+                    <div className="mt-4">
+                        <Link
+                            to="/checkout"
+                            className="block w-full bg-white text-blue-600 text-center py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                        >
+                            Proceed to Checkout
+                        </Link>
                     </div>
                 )}
             </div>
