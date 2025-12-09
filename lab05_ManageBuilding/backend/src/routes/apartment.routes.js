@@ -71,7 +71,7 @@ const validateApartment = [
 const validateSearchFilters = [
     query('q').optional().trim().isLength({ max: 100 }).withMessage('Search term is too long'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be >= 1'),
-    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+    query('limit').optional().isInt({ min: 1, max: 500 }).withMessage('Limit must be between 1 and 500'),
     query('buildingId').optional().isInt().withMessage('Building ID must be a number'),
     query('blockId').optional().isInt().withMessage('Block ID must be a number'),
     query('floorId').optional().isInt().withMessage('Floor ID must be a number'),

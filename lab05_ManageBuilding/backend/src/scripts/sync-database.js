@@ -9,10 +9,17 @@ async function syncDatabase() {
         await sequelize.authenticate();
         console.log('✅ Database connection established successfully.');
 
+        // Disable foreign key checks to allow dropping tables with foreign keys
+        await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+
         // Sync all models
         // alter: true will update existing tables to match models
         // force: true will drop and recreate tables (use with caution!)
-        await sequelize.sync({ alter: true });
+        // USING FORCE=TRUE TO UPDATE ENUM VALUES
+        await sequelize.sync({ force: true });
+
+        // Re-enable foreign key checks
+        await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
 
         console.log('✅ Database synchronized successfully!');
         console.log('📋 Tables synced:');

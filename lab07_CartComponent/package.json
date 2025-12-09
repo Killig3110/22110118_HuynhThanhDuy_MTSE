@@ -1,6 +1,6 @@
 {
   "name": "lab07_cartcomponent",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Thư viện component React đầy đủ cho hệ thống giỏ hàng thuê/mua căn hộ, tích hợp với lab05_ManageBuilding.",
   "main": "src/index.js",
   "module": "src/index.js",

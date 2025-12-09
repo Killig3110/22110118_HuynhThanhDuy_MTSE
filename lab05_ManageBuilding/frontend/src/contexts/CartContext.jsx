@@ -106,20 +106,46 @@ export const CartProvider = ({ children }) => {
         setError(null);
         try {
             const token = getAuthToken();
-            const response = await axios.patch(
-                `${API_URL}/${itemId}`,
-                updates,
-                { headers: { Authorization: `Bearer ${token}` } }
+
+            // GraphQL mutation to update cart item
+            const query = `
+                mutation UpdateCartItem($itemId: ID!, $months: Int, $note: String) {
+                    updateCartItem(itemId: $itemId, months: $months, note: $note) {
+                        id
+                        months
+                        priceSnapshot
+                        note
+                    }
+                }
+            `;
+
+            const response = await axios.post(
+                'http://localhost:5001/graphql',
+                {
+                    query,
+                    variables: {
+                        itemId,
+                        ...updates
+                    }
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
             );
 
-            if (response.data.success) {
-                await fetchCart(); // Refresh cart
-                toast.success('Cart updated');
-                return { success: true, data: response.data.data };
+            if (response.data.errors) {
+                throw new Error(response.data.errors[0].message);
             }
+
+            await fetchCart(); // Refresh cart
+            toast.success('Cart updated');
+            return { success: true, data: response.data.data.updateCartItem };
         } catch (err) {
             console.error('Error updating cart item:', err);
-            const errorMsg = err.response?.data?.message || 'Failed to update cart';
+            const errorMsg = err.response?.data?.errors?.[0]?.message || err.message || 'Failed to update cart';
             setError(errorMsg);
             toast.error(errorMsg);
             return { success: false, error: errorMsg };
@@ -256,8 +282,8 @@ export const CartProvider = ({ children }) => {
         }
     };
 
-    // Checkout cart - Create lease requests for selected items
-    const checkout = async () => {
+    // Checkout cart - Use GraphQL mutation
+    const checkout = async (paymentMethod = 'credit_card', note = '') => {
         if (!user) {
             toast.error('Please login to checkout');
             return { success: false };
@@ -273,24 +299,68 @@ export const CartProvider = ({ children }) => {
         setError(null);
         try {
             const token = getAuthToken();
+
+            // GraphQL mutation
+            const query = `
+                mutation CheckoutCart($input: CheckoutInput!) {
+                    checkoutCart(input: $input) {
+                        success
+                        message
+                        payments {
+                            id
+                            amount
+                            paymentMethod
+                            status
+                        }
+                        apartments {
+                            id
+                            apartmentNumber
+                            status
+                        }
+                        userRole
+                    }
+                }
+            `;
+
             const response = await axios.post(
-                `${API_URL}/checkout`,
-                {},
-                { headers: { Authorization: `Bearer ${token}` } }
+                'http://localhost:5001/graphql',
+                {
+                    query,
+                    variables: {
+                        input: {
+                            paymentMethod,
+                            note
+                        }
+                    }
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
             );
 
-            if (response.data.success) {
-                await fetchCart(); // Refresh cart (selected items should be removed)
-                console.log('✅ Checkout Success:', response.data.data);
-                toast.success(response.data.message);
+            if (response.data.errors) {
+                throw new Error(response.data.errors[0].message);
+            }
+
+            const result = response.data.data.checkoutCart;
+
+            if (result.success) {
+                await fetchCart(); // Refresh cart (items should be cleared)
+                console.log('✅ Checkout Success:', result);
+                toast.success(result.message || 'Checkout completed successfully!');
                 return {
                     success: true,
-                    data: response.data.data
+                    data: result
                 };
+            } else {
+                throw new Error(result.message || 'Checkout failed');
             }
         } catch (err) {
             console.error('Error during checkout:', err);
-            const errorMsg = err.response?.data?.message || 'Failed to checkout';
+            const errorMsg = err.response?.data?.errors?.[0]?.message || err.message || 'Failed to checkout';
             setError(errorMsg);
             toast.error(errorMsg);
             return { success: false, error: errorMsg };

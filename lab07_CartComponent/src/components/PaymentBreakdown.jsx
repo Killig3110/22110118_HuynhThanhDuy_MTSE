@@ -9,6 +9,7 @@ const PaymentBreakdown = ({
     showMaintenance = true,
     showTaxes = false,
     taxRate = 0,
+    onCheckout,
     className = ''
 }) => {
     const calculateBreakdown = () => {
@@ -227,6 +228,30 @@ const PaymentBreakdown = ({
                         }}>
                             ⚠️ <strong>Maintenance:</strong> Covers building upkeep, security, amenities, and common area expenses.
                         </div>
+                    )}
+
+                    {/* Checkout Button */}
+                    {onCheckout && breakdown.selectedCount > 0 && (
+                        <button
+                            onClick={onCheckout}
+                            style={{
+                                marginTop: 16,
+                                width: '100%',
+                                padding: '14px',
+                                background: '#2563eb',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: 8,
+                                fontSize: 15,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'background 0.2s',
+                            }}
+                            onMouseOver={(e) => e.target.style.background = '#1d4ed8'}
+                            onMouseOut={(e) => e.target.style.background = '#2563eb'}
+                        >
+                            Proceed to Checkout ({breakdown.selectedCount})
+                        </button>
                     )}
                 </div>
             )}

@@ -28,7 +28,7 @@ const cartResolvers = {
 
     Mutation: {
         /**
-         * Add item to cart
+         * Add item to cart (manual add - optional, mainly auto-created from lease approval)
          */
         addToCart: async (_, { input }, { user }) => {
             if (!user) {
@@ -46,7 +46,7 @@ const cartResolvers = {
         },
 
         /**
-         * Update cart item
+         * Update cart item (months, note)
          */
         updateCartItem: async (_, { id, input }, { user }) => {
             if (!user) {
@@ -88,6 +88,18 @@ const cartResolvers = {
             }
 
             return await cartService.selectAll(user.id, selected);
+        },
+
+        /**
+         * Clear all cart items
+         */
+        clearCart: async (_, __, { user }) => {
+            if (!user) {
+                throw new Error('Authentication required');
+            }
+
+            await cartService.clearCart(user.id);
+            return true;
         },
 
         /**

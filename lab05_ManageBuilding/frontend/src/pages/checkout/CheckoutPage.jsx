@@ -26,19 +26,33 @@ const CheckoutPage = () => {
     }, [selectedItems.length, isLoading, navigate]);
 
     const handleCheckout = async () => {
+        // Validate payment method selection
         if (!paymentMethod) {
             toast.error('Please select a payment method');
             return;
         }
 
+        // Validate customer information
+        if (!user?.firstName || !user?.lastName || !user?.email) {
+            toast.error('Please complete your profile information before checkout');
+            return;
+        }
+
+        // Additional validation for credit card (future enhancement)
+        if (paymentMethod === 'credit_card') {
+            // For now, just show a warning that payment details will be required
+            console.log('Credit card payment selected - would validate card details here');
+        }
+
         setIsProcessing(true);
 
         try {
-            const result = await checkout();
+            const result = await checkout(paymentMethod, `Payment via ${paymentMethod}`);
 
             if (result.success) {
                 setOrderComplete(true);
-                toast.success(`Successfully created ${result.data.count} lease request(s)!`);
+                const paymentsCount = result.data?.payments?.length || 0;
+                toast.success(`Successfully processed ${paymentsCount} payment(s)!`);
             } else {
                 toast.error(result.error || 'Failed to process checkout');
                 setIsProcessing(false);
@@ -73,11 +87,11 @@ const CheckoutPage = () => {
                             </div>
                         </div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                            Order Placed Successfully!
+                            Payment Completed Successfully!
                         </h2>
                         <p className="text-gray-600 mb-6">
-                            Your order has been received and is being processed.
-                            You will receive a confirmation email shortly.
+                            Your payment has been processed and you are now a resident.
+                            Welcome to your new home!
                         </p>
                         <div className="space-y-3">
                             <button
@@ -152,7 +166,7 @@ const CheckoutPage = () => {
                                     </label>
                                     <input
                                         type="tel"
-                                        value={user?.phoneNumber || ''}
+                                        value={user?.phoneNumber || 'N/A'}
                                         disabled
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50"
                                     />

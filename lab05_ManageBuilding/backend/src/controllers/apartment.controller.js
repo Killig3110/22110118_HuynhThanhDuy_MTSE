@@ -37,9 +37,16 @@ const searchApartments = async (req, res) => {
         // Base filters
         const whereClause = { isActive: true };
 
+        // CRITICAL: Only show apartments available for rent or sale in marketplace
+        // Exclude occupied and under_renovation apartments
+        if (!status) {
+            whereClause.status = { [Op.in]: ['for_rent', 'for_sale'] };
+        } else {
+            whereClause.status = status;
+        }
+
         if (floorId) whereClause.floorId = parseInt(floorId, 10);
         if (type) whereClause.type = type;
-        if (status) whereClause.status = status;
         if (bedrooms !== undefined) whereClause.bedrooms = parseInt(bedrooms, 10);
         if (bathrooms !== undefined) whereClause.bathrooms = parseInt(bathrooms, 10);
         if (hasParking === 'true') whereClause.parkingSlots = { [Op.gt]: 0 };

@@ -309,13 +309,19 @@ class CartService {
             if (item.selected) {
                 selectedCount++;
 
+                const price = parseFloat(item.price) || 0;
+                const deposit = parseFloat(item.deposit) || 0;
+                const maintenanceFee = parseFloat(item.maintenanceFee) || 0;
+                const months = item.months || 1;
+
                 if (item.mode === 'rent') {
-                    rentTotal += item.price * item.months;
-                    depositTotal += item.deposit;
-                    maintenanceTotal += item.maintenanceFee * item.months;
+                    rentTotal += price * months;
+                    depositTotal += deposit;
+                    maintenanceTotal += maintenanceFee * months;
                 } else {
-                    buyTotal += item.price;
-                    maintenanceTotal += item.maintenanceFee * 12; // Annual
+                    buyTotal += price;
+                    depositTotal += deposit;
+                    maintenanceTotal += maintenanceFee * 12; // Annual
                 }
             }
         });
@@ -351,8 +357,8 @@ class CartService {
             code: apartment?.apartmentNumber,
             title: `${apartment?.type?.toUpperCase()} Apartment`,
             type: apartment?.type,
-            area: apartment?.area,
-            price: cartItem.priceSnapshot || (cartItem.mode === 'rent' ? apartment?.monthlyRent : apartment?.salePrice),
+            area: parseFloat(apartment?.area) || 0,
+            price: parseFloat(cartItem.priceSnapshot || (cartItem.mode === 'rent' ? apartment?.monthlyRent : apartment?.salePrice)) || 0,
             mode: cartItem.mode,
             months: cartItem.months || 1,
             status: apartment?.status,
@@ -374,8 +380,29 @@ class CartService {
             amenities: apartment?.amenities || [],
 
             // Financial details
-            maintenanceFee: cartItem.maintenanceFeeSnapshot || apartment?.maintenanceFee || 0,
-            deposit: cartItem.depositSnapshot || 0,
+            maintenanceFee: parseFloat(cartItem.maintenanceFeeSnapshot || apartment?.maintenanceFee) || 0,
+            deposit: parseFloat(cartItem.depositSnapshot) || 0,
+
+            // Full apartment object for frontend
+            apartment: {
+                id: apartment?.id,
+                apartmentNumber: apartment?.apartmentNumber,
+                type: apartment?.type,
+                area: parseFloat(apartment?.area) || 0,
+                bedrooms: apartment?.bedrooms,
+                bathrooms: apartment?.bathrooms,
+                balconies: apartment?.balconies,
+                parkingSlots: apartment?.parkingSlots,
+                monthlyRent: parseFloat(apartment?.monthlyRent) || 0,
+                salePrice: parseFloat(apartment?.salePrice) || 0,
+                maintenanceFee: parseFloat(apartment?.maintenanceFee) || 0,
+                status: apartment?.status,
+                description: apartment?.description,
+                amenities: apartment?.amenities || [],
+                images: apartment?.images || [],
+                isListedForRent: apartment?.isListedForRent,
+                isListedForSale: apartment?.isListedForSale
+            },
 
             // Metadata
             addedAt: cartItem.addedAt
@@ -428,15 +455,18 @@ class CartService {
             // 2. Validate all apartments are still available
             for (const item of cartItems) {
                 const apartment = item.apartment;
-                if (apartment.status !== 'available') {
-                    throw new Error(`Apartment ${apartment.apartmentNumber} is no longer available`);
+
+                // Check if apartment is available for transaction
+                const availableStatuses = ['for_rent', 'for_sale'];
+                if (!availableStatuses.includes(apartment.status)) {
+                    throw new Error(`Apartment ${apartment.apartmentNumber} is no longer available (status: ${apartment.status})`);
                 }
 
-                // Check if mode matches apartment listing
-                if (item.mode === 'rent' && !apartment.isListedForRent) {
+                // Check if mode matches apartment status (listing flags may be false if reserved from approved lease)
+                if (item.mode === 'rent' && apartment.status !== 'for_rent') {
                     throw new Error(`Apartment ${apartment.apartmentNumber} is not available for rent`);
                 }
-                if (item.mode === 'buy' && !apartment.isListedForSale) {
+                if (item.mode === 'buy' && apartment.status !== 'for_sale') {
                     throw new Error(`Apartment ${apartment.apartmentNumber} is not available for sale`);
                 }
             }
@@ -457,10 +487,29 @@ class CartService {
                     ? (cartItem.priceSnapshot || apartment.monthlyRent) * (cartItem.months || 1)
                     : (cartItem.priceSnapshot || apartment.salePrice);
 
-                // Create payment record
+                // Create billing record first
+                const { Billing } = require('../models');
+                const billing = await Billing.create({
+                    apartmentId: apartment.id,
+                    billType: cartItem.mode === 'rent' ? 'rent' : 'other',
+                    description: `${cartItem.mode === 'rent' ? 'Rent' : 'Purchase'} payment for apartment ${apartment.apartmentNumber}`,
+                    amount: amount,
+                    billDate: new Date(),
+                    dueDate: new Date(),
+                    status: 'paid',
+                    lateFee: 0,
+                    totalAmount: amount,
+                    billPeriodStart: new Date(),
+                    billPeriodEnd: new Date(),
+                    notes: note || `Checkout payment via cart`,
+                    createdBy: userId,
+                    isActive: true
+                }, { transaction });
+
+                // Create payment record linked to billing
                 const payment = await Payment.create({
                     apartmentId: apartment.id,
-                    billingId: null, // Will be linked to billing later
+                    billingId: billing.id,
                     amount: amount,
                     paymentMethod: paymentMethod,
                     paymentDate: new Date(),
@@ -473,35 +522,37 @@ class CartService {
                     isActive: true
                 }, { transaction });
 
-                // Update apartment status and owner/tenant
+                // Update apartment status to occupied after successful checkout
                 const updateData = {
-                    status: cartItem.mode === 'buy' ? 'sold' : 'occupied'
+                    status: 'occupied',
+                    isListedForRent: false,
+                    isListedForSale: false
                 };
 
                 if (cartItem.mode === 'buy') {
                     updateData.ownerId = userId;
-                    updateData.isListedForSale = false;
+                    updateData.tenantId = null;  // Clear tenant if buying
                 } else {
                     updateData.tenantId = userId;
-                    updateData.isListedForRent = false;
                 }
 
                 await apartment.update(updateData, { transaction });
 
-                // Create household member entry
+                // Create household member entry with user info
                 await HouseholdMember.create({
                     apartmentId: apartment.id,
-                    userId: userId,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
                     relationship: cartItem.mode === 'buy' ? 'owner' : 'tenant',
-                    isActive: true,
-                    moveInDate: new Date()
+                    dateOfBirth: user.dateOfBirth || null,
+                    phoneNumber: user.phone || null,
+                    email: user.email,
+                    moveInDate: new Date(),
+                    isActive: true
                 }, { transaction });
 
-                // Update related lease request if exists
-                await LeaseRequest.update({
-                    status: 'completed',
-                    completedAt: new Date()
-                }, {
+                // Delete completed lease request (approved + checked out)
+                await LeaseRequest.destroy({
                     where: {
                         apartmentId: apartment.id,
                         userId: userId,
@@ -549,7 +600,7 @@ class CartService {
                     paymentMethod: p.paymentMethod,
                     paymentDate: p.paymentDate.toISOString()
                 })),
-                completedApartments: completedApartments.map(a => ({
+                apartments: completedApartments.map(a => ({
                     id: a.id,
                     apartmentNumber: a.apartmentNumber,
                     type: a.type,

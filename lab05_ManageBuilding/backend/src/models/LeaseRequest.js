@@ -41,11 +41,11 @@ const LeaseRequest = sequelize.define('LeaseRequest', {
         allowNull: true
     },
     monthlyRent: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: true
     },
     totalPrice: {
-        type: DataTypes.DECIMAL(12, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: true
     },
     contactName: {

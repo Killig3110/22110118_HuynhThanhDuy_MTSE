@@ -178,19 +178,6 @@ app.get('/api', (req, res) => {
     });
 });
 
-// Error handling middleware
-app.use(errorHandler);
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'API endpoint not found',
-        path: req.path,
-        method: req.method
-    });
-});
-
 const PORT = process.env.PORT || 5000;
 
 let server;
@@ -249,6 +236,19 @@ sequelize.authenticate()
                 origin: process.env.CLIENT_URL || 'http://localhost:3000',
                 credentials: true
             }
+        });
+
+        // Error handling middleware (AFTER GraphQL)
+        app.use(errorHandler);
+
+        // 404 handler (MUST be LAST)
+        app.use((req, res) => {
+            res.status(404).json({
+                success: false,
+                message: 'API endpoint not found',
+                path: req.path,
+                method: req.method
+            });
         });
 
         server = app.listen(PORT, () => {

@@ -51,7 +51,7 @@ const CartPage = () => {
         }
     };
 
-    // Handle checkout
+    // Handle checkout - navigate to checkout page
     const handleCheckout = () => {
         const selectedItems = cartItems.filter(item => item.selected);
         if (selectedItems.length === 0) {
@@ -93,9 +93,9 @@ const CartPage = () => {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 {/* Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Shopping Cart</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Invoice</h1>
                     <p className="text-gray-600">
-                        {totals.totalItems} {totals.totalItems === 1 ? 'item' : 'items'} in cart
+                        {totals.totalItems} approved {totals.totalItems === 1 ? 'apartment' : 'apartments'} ready for payment
                     </p>
                 </div>
 
@@ -113,25 +113,25 @@ const CartPage = () => {
                                     strokeLinecap="round"
                                     strokeLinejoin="round"
                                     strokeWidth={1.5}
-                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                                 />
                             </svg>
                         </div>
-                        <h3 className="text-xl font-semibold text-gray-900 mb-2">Your cart is empty</h3>
-                        <p className="text-gray-600 mb-6">Start adding apartments to your cart!</p>
+                        <h3 className="text-xl font-semibold text-gray-900 mb-2">No pending payments</h3>
+                        <p className="text-gray-600 mb-6">Submit a lease request to get started!</p>
                         <a
-                            href="/apartments"
+                            href="/marketplace"
                             className="inline-block px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                            Browse Apartments
+                            Browse Marketplace
                         </a>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                         {/* Cart Items */}
                         <div className="lg:col-span-2 space-y-4">
-                            {/* Select All & Clear */}
-                            <div className="bg-white rounded-lg shadow-sm p-4 flex items-center justify-between">
+                            {/* Select All */}
+                            <div className="bg-white rounded-lg shadow-sm p-4">
                                 <label className="flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -143,68 +143,63 @@ const CartPage = () => {
                                         Select All ({totals.selectedItems}/{totals.totalItems})
                                     </span>
                                 </label>
-                                <button
-                                    onClick={handleClearCart}
-                                    className="text-red-600 hover:text-red-700 font-medium"
-                                >
-                                    Clear Cart
-                                </button>
                             </div>
 
                             {/* Cart Items using lab07 CartItemCard */}
                             {cartItems.map((item) => {
+                                // Use the nested apartment object from API response
                                 const apartment = item.apartment || {};
-                                const floor = apartment.floor || {};
-                                const building = floor.building || {};
-                                const block = building.block || {};
 
                                 return (
                                     <div key={item.id} className="relative">
                                         <CartItemCard
                                             // Selection
+                                            selectable={true}
                                             selected={item.selected}
-                                            onSelect={() => handleToggleSelect(item.id)}
+                                            onSelectToggle={() => handleToggleSelect(item.id)}
 
-                                            // Basic info
-                                            title={`Apartment ${apartment.number}`}
+                                            // Basic info - use apartment data from API
+                                            code={apartment.apartmentNumber || item.code || 'N/A'}
+                                            title={item.title || `${item.type?.toUpperCase()} Apartment`}
+                                            type={apartment.type || item.type}
                                             mode={item.mode}
 
-                                            // Location hierarchy
-                                            block={block.name || 'N/A'}
-                                            building={building.name || 'N/A'}
-                                            floor={floor.number || 'N/A'}
+                                            // Location hierarchy - use flattened fields from API
+                                            block={item.block}
+                                            building={item.building}
+                                            floor={item.floor}
 
                                             // Apartment details
-                                            bedrooms={apartment.bedrooms || 0}
-                                            bathrooms={apartment.bathrooms || 0}
-                                            balconies={apartment.balconies || 0}
-                                            parkingSpots={apartment.parkingSpots || 0}
+                                            bedrooms={apartment.bedrooms || item.bedrooms}
+                                            bathrooms={apartment.bathrooms || item.bathrooms}
+                                            balconies={apartment.balconies || item.balconies}
+                                            parkingSlots={apartment.parkingSlots || item.parkingSlots}
 
-                                            // Area
-                                            area={apartment.area ? `${apartment.area} m²` : 'N/A'}
+                                            // Area - use numeric value from API
+                                            area={apartment.area || item.area}
 
                                             // Amenities
-                                            amenities={apartment.amenities || []}
+                                            amenities={apartment.amenities || item.amenities || []}
 
-                                            // Financial
-                                            price={parseFloat(item.priceSnapshot) || 0}
-                                            deposit={parseFloat(item.depositSnapshot) || 0}
-                                            maintenanceFee={parseFloat(item.maintenanceFeeSnapshot) || 0}
+                                            // Financial - already parsed in backend
+                                            price={item.price || 0}
+                                            deposit={item.deposit || 0}
+                                            maintenanceFee={item.maintenanceFee || 0}
 
                                             // Lease term
                                             months={item.months}
-                                            minMonths={6}
-                                            maxMonths={36}
+                                            minLeaseTerm={6}
+                                            maxLeaseTerm={36}
                                             onMonthsChange={(newMonths) => handleUpdateMonths(item.id, newMonths)}
 
-                                            // Actions
-                                            onRemove={() => handleRemove(item.id)}
-
                                             // Status
-                                            status={apartment.status}
+                                            status={apartment.status || item.status}
 
                                             // Note
                                             note={item.note}
+
+                                            // Image - use first image from apartment images array
+                                            image={apartment.images?.[0] || null}
                                         />
                                     </div>
                                 );
@@ -215,18 +210,15 @@ const CartPage = () => {
                         <div className="lg:col-span-1">
                             <div className="sticky top-8">
                                 <PaymentBreakdown
-                                    rentItems={cartItems.filter(item => item.selected && item.mode === 'rent').map(item => ({
-                                        name: `Apartment ${item.apartment?.number || 'N/A'}`,
-                                        monthlyRent: parseFloat(item.priceSnapshot) || 0,
-                                        deposit: parseFloat(item.depositSnapshot) || 0,
-                                        maintenanceFee: parseFloat(item.maintenanceFeeSnapshot) || 0,
-                                        months: item.months
+                                    items={cartItems.map(item => ({
+                                        ...item,
+                                        price: item.price || 0,
+                                        deposit: item.deposit || 0,
+                                        maintenanceFee: item.maintenanceFee || 0
                                     }))}
-                                    buyItems={cartItems.filter(item => item.selected && item.mode === 'buy').map(item => ({
-                                        name: `Apartment ${item.apartment?.number || 'N/A'}`,
-                                        price: parseFloat(item.priceSnapshot) || 0,
-                                        maintenanceFee: parseFloat(item.maintenanceFeeSnapshot) || 0
-                                    }))}
+                                    showDeposit={true}
+                                    showMaintenance={true}
+                                    showTaxes={false}
                                     taxRate={0.1}
                                     onCheckout={handleCheckout}
                                 />

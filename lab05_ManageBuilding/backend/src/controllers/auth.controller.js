@@ -60,7 +60,8 @@ const register = async (req, res) => {
             include: [
                 { model: Role, as: 'role' },
                 { model: Position, as: 'position' }
-            ]
+            ],
+            attributes: { include: ['avatar'] }
         });
 
         res.status(201).json({
@@ -99,7 +100,8 @@ const login = async (req, res) => {
             include: [
                 { model: Role, as: 'role' },
                 { model: Position, as: 'position' }
-            ]
+            ],
+            attributes: { include: ['avatar'] }
         });
 
         if (!user) {
@@ -180,7 +182,8 @@ const refreshTokenEndpoint = async (req, res) => {
             include: [
                 { model: Role, as: 'role' },
                 { model: Position, as: 'position' }
-            ]
+            ],
+            attributes: { include: ['avatar'] }
         });
 
         if (!user || !user.isActive) {
@@ -438,7 +441,8 @@ const getProfile = async (req, res) => {
             include: [
                 { model: Role, as: 'role' },
                 { model: Position, as: 'position' }
-            ]
+            ],
+            attributes: { include: ['avatar'] } // Explicitly include avatar
         });
 
         res.json({

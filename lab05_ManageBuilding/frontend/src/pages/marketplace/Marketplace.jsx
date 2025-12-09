@@ -182,9 +182,9 @@ const Marketplace = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {sortedListings.map((apt) => {
                     // Check if apartment is actually available for rent/buy
-                    const isAvailable = apt.status === 'vacant' && apt.isActive;
-                    const canRent = isAvailable && apt.isListedForRent;
-                    const canBuy = isAvailable && apt.isListedForSale;
+                    const isAvailable = ['for_rent', 'for_sale'].includes(apt.status) && apt.isActive;
+                    const canRent = apt.status === 'for_rent' && apt.isListedForRent;
+                    const canBuy = apt.status === 'for_sale' && apt.isListedForSale;
 
                     return (
                         <div key={apt.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
