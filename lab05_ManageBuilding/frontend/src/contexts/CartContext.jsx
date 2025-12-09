@@ -281,6 +281,7 @@ export const CartProvider = ({ children }) => {
 
             if (response.data.success) {
                 await fetchCart(); // Refresh cart (selected items should be removed)
+                console.log('✅ Checkout Success:', response.data.data);
                 toast.success(response.data.message);
                 return {
                     success: true,

@@ -95,6 +95,20 @@ const createLeaseRequest = async (req, res) => {
             status: nextStatus
         });
 
+        // Log guest request for admin notification
+        if (!userId) {
+            console.log('🔔 NEW GUEST LEASE REQUEST:', {
+                id: lease.id,
+                apartment: `#${apartment.apartmentNumber} - ${apartment.floor?.building?.buildingCode}`,
+                type: lease.type,
+                contactName: lease.contactName,
+                contactEmail: lease.contactEmail,
+                contactPhone: lease.contactPhone,
+                status: lease.status,
+                timestamp: new Date().toISOString()
+            });
+        }
+
         res.status(201).json({
             success: true,
             message: 'Lease request created',
@@ -280,7 +294,20 @@ const decideLeaseRequest = async (req, res) => {
                 });
 
                 if (residentRole) {
+                    const oldRole = requester.role?.name || 'user';
                     await requester.update({ roleId: residentRole.id }, { transaction });
+
+                    // Log role upgrade for notification
+                    console.log('✨ USER ROLE UPGRADED:', {
+                        userId: requester.id,
+                        email: requester.email,
+                        oldRole: oldRole,
+                        newRole: 'resident',
+                        reason: 'Lease request approved',
+                        leaseId: lease.id,
+                        apartmentNumber: lease.apartment?.apartmentNumber,
+                        timestamp: new Date().toISOString()
+                    });
                 }
             }
         }

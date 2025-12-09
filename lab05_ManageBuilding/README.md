@@ -122,7 +122,127 @@ curl -H "Authorization: Bearer <token>" \
 - **Billing & Payments**: Comprehensive financial management
 - **Announcements**: Building-wide communication system
 
+## 🆕 Enhanced Features (Latest Update)
+
+### Guest Access System
+- **Public Marketplace**: Browse apartments without authentication
+- **Guest Requests**: Submit lease requests with contact info (name, email, phone)
+- **Auto-Account Creation**: Guests become users when requests are approved
+- **Role Upgrade**: Users automatically upgraded to residents on approval
+
+### Apartment Rental/Purchase Workflow
+
+#### For Guests (Unauthenticated Users)
+1. **Browse**: View Marketplace and Building Map (no login required)
+2. **View Details**: Click apartment card → See full details page
+3. **Request**: Submit lease request with contact information
+4. **Notification**: Admin sees console log of guest request
+5. **Approval**: When manager approves → Auto-create account with temp password
+6. **Upgrade**: User role automatically changes to "resident"
+
+#### For Authenticated Users (Logged In)
+1. **Browse**: Access Marketplace with enhanced features
+2. **Add to Cart**: Click "Rent" or "Buy" buttons on apartment cards
+3. **Manage Cart**: View cart, update quantities (months for rent), remove items
+4. **Checkout**: Select items → Checkout → Creates batch lease requests
+5. **Track Requests**: View "My Requests" page for status updates
+
+#### For Residents
+- Same as authenticated users
+- Can submit requests without additional contact info
+- Dashboard shows owned/rented apartments
+- Access to resident-only features
+
+### Enhanced UI Components
+
+**ApartmentDetailPage** (`/apartments/:id`)
+- Image gallery with thumbnails and carousel
+- Full apartment information (size, bedrooms, bathrooms, amenities)
+- Pricing details (rent/sale price, deposit, maintenance fee)
+- Location information (block, building, floor)
+- "Add to Cart" button (authenticated users)
+- "Request Lease" button (all users, opens modal for guests)
+- Share and favorite functionality
+
+**Marketplace Enhancements**
+- Sort by: Newest, Price (Low to High), Price (High to Low)
+- Filter by: For Rent, For Sale, All
+- Quick "View" button → Detail page
+- "Add to Cart" buttons for authenticated users (Rent/Buy)
+- Responsive grid layout
+
+**Cart Integration**
+- Cart icon in Navbar (hidden for guests)
+- Bulk checkout → Creates multiple lease requests
+- Auto-clear selected items after successful checkout
+- Transaction-wrapped database operations
+
+### Backend Improvements
+
+**Error Handling**
+- Structured error responses with error codes
+- AppError class for operational errors
+- asyncHandler wrapper for async route handlers
+- Graceful shutdown with SIGTERM/SIGINT handlers
+- Enhanced health check with database connectivity test
+
+**Database Transactions**
+- Checkout operations wrapped in transactions
+- Lease approval creates user accounts atomically
+- Automatic rollback on errors
+- Data consistency guaranteed
+
+**Notifications** (Console Logs)
+- Guest request submissions: `🔔 NEW GUEST LEASE REQUEST`
+- User role upgrades: `✨ USER ROLE UPGRADED`
+- Checkout success: `✅ Checkout Success`
+
+**Error Boundaries**
+- React ErrorBoundary component wraps entire app
+- User-friendly error UI with retry/home buttons
+- Development mode shows error details and stack trace
+- Automatic reload after multiple errors
+
+### API Endpoints
+
+**Cart Operations**
+- `POST /api/cart/checkout` - Batch create lease requests from selected cart items
+- Returns count of created requests and clears cart
+
+**Lease Requests**
+- `POST /api/leases` - Create lease request (uses `optionalAuth` middleware)
+- Accepts guest requests with `contactName`, `contactEmail`, `contactPhone`
+- Auto-creates user accounts and upgrades roles on approval
+
+**Apartments**
+- `GET /apartments/:id` - Public endpoint (uses `optionalAuth`)
+- Returns full apartment details for detail page
+
 ---
 
-**Lab05 Building Management System** - HCMUTE MTSE Course
-Student ID: 22110118 - Huỳnh Thành Duy
+## 🧪 Testing Guide
+
+### Test Guest Flow
+1. Open `/marketplace` without logging in
+2. Click "View" on an apartment → See detail page
+3. Click "Request Lease" → Fill guest modal → Submit
+4. Check backend console for guest request log
+
+### Test User Cart Flow
+1. Login as any user (not staff)
+2. Go to `/marketplace`
+3. Click "Rent" or "Buy" → Item added to cart
+4. Go to `/cart` → Select items → Checkout
+5. Check "My Requests" page for lease requests
+
+### Test Role Upgrade
+1. Login as admin/building_manager
+2. Go to "Lease Requests" page
+3. Approve a guest request → Check console for role upgrade log
+4. Guest receives temp password and resident role
+
+---
+
+**Lab05 Building Management System** - HCMUTE MTSE Course  
+Student ID: 22110118 - Huỳnh Thành Duy  
+Latest Update: Guest Access + Cart Integration + Enhanced Error Handling

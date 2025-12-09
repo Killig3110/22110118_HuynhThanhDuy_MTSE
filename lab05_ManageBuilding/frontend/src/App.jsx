@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { CartProvider } from './contexts/CartContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -101,249 +102,251 @@ const AppLayout = ({ children }) => {
 
 function App() {
     return (
-        <AuthProvider>
-            <CartProvider>
-                <Router>
-                    <AppLayout>
-                        <Routes>
-                            <Route path="/home" element={<HomePage />} />
-                            {/* Public Routes */}
-                            <Route
-                                path="/login"
-                                element={
-                                    <PublicRoute>
-                                        <Login />
-                                    </PublicRoute>
-                                }
-                            />
-                            <Route
-                                path="/register"
-                                element={
-                                    <PublicRoute>
-                                        <Register />
-                                    </PublicRoute>
-                                }
-                            />
-                            <Route
-                                path="/forgot-password"
-                                element={
-                                    <PublicRoute>
-                                        <ForgotPassword />
-                                    </PublicRoute>
-                                }
-                            />
-                            <Route
-                                path="/reset-password/:token"
-                                element={
-                                    <PublicRoute>
-                                        <ResetPassword />
-                                    </PublicRoute>
-                                }
-                            />
+        <ErrorBoundary>
+            <AuthProvider>
+                <CartProvider>
+                    <Router>
+                        <AppLayout>
+                            <Routes>
+                                <Route path="/home" element={<HomePage />} />
+                                {/* Public Routes */}
+                                <Route
+                                    path="/login"
+                                    element={
+                                        <PublicRoute>
+                                            <Login />
+                                        </PublicRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/register"
+                                    element={
+                                        <PublicRoute>
+                                            <Register />
+                                        </PublicRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/forgot-password"
+                                    element={
+                                        <PublicRoute>
+                                            <ForgotPassword />
+                                        </PublicRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/reset-password/:token"
+                                    element={
+                                        <PublicRoute>
+                                            <ResetPassword />
+                                        </PublicRoute>
+                                    }
+                                />
 
-                            {/* Protected Routes */}
-                            <Route
-                                path="/dashboard"
-                                element={
-                                    <ProtectedRoute>
-                                        <Dashboard />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/profile"
-                                element={
-                                    <ProtectedRoute>
-                                        <Profile />
-                                    </ProtectedRoute>
-                                }
-                            />
+                                {/* Protected Routes */}
+                                <Route
+                                    path="/dashboard"
+                                    element={
+                                        <ProtectedRoute>
+                                            <Dashboard />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/profile"
+                                    element={
+                                        <ProtectedRoute>
+                                            <Profile />
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            {/* System Management Routes (Admin only) */}
-                            <Route
-                                path="/management"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <UserList />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/management/users/create"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <UserCreate />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/management/users/edit/:id"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <UserEdit />
-                                    </ProtectedRoute>
-                                }
-                            />
+                                {/* System Management Routes (Admin only) */}
+                                <Route
+                                    path="/management"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <UserList />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/management/users/create"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <UserCreate />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/management/users/edit/:id"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <UserEdit />
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            {/* Building Management Routes - Public Access for Guest Viewing */}
-                            <Route
-                                path="/buildings"
-                                element={<BuildingList />}
-                            />
-                            <Route
-                                path="/buildings/map"
-                                element={<InteractiveBuildingMap />}
-                            />
-                            <Route
-                                path="/search"
-                                element={
-                                    <ProtectedRoute>
-                                        <SearchPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/leases"
-                                element={
-                                    <ProtectedRoute>
-                                        <LeaseRequests />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            {/* Marketplace - Public Access */}
-                            <Route
-                                path="/marketplace"
-                                element={<Marketplace />}
-                            />
+                                {/* Building Management Routes - Public Access for Guest Viewing */}
+                                <Route
+                                    path="/buildings"
+                                    element={<BuildingList />}
+                                />
+                                <Route
+                                    path="/buildings/map"
+                                    element={<InteractiveBuildingMap />}
+                                />
+                                <Route
+                                    path="/search"
+                                    element={
+                                        <ProtectedRoute>
+                                            <SearchPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/leases"
+                                    element={
+                                        <ProtectedRoute>
+                                            <LeaseRequests />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                {/* Marketplace - Public Access */}
+                                <Route
+                                    path="/marketplace"
+                                    element={<Marketplace />}
+                                />
 
-                            {/* Apartment Detail - Public Access */}
-                            <Route
-                                path="/apartments/:id"
-                                element={<ApartmentDetailPage />}
-                            />
+                                {/* Apartment Detail - Public Access */}
+                                <Route
+                                    path="/apartments/:id"
+                                    element={<ApartmentDetailPage />}
+                                />
 
-                            <Route
-                                path="/cart"
-                                element={
-                                    <ProtectedRoute>
-                                        <CartPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/cart/manage"
-                                element={
-                                    <ProtectedRoute>
-                                        <CartManagement />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/checkout"
-                                element={
-                                    <ProtectedRoute>
-                                        <CheckoutPage />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/my-requests"
-                                element={
-                                    <ProtectedRoute>
-                                        <MyRequests />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/my-apartments"
-                                element={
-                                    <ProtectedRoute>
-                                        <MyApartments />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/residents"
-                                element={
-                                    <ProtectedRoute requiredRole="building_manager">
-                                        <Residents />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/admin/blocks"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <BlockManager />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/admin/buildings"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <BuildingManager />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/admin/floors"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <FloorManager />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/admin/apartments"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <ApartmentManager />
-                                    </ProtectedRoute>
-                                }
-                            />
-                            <Route
-                                path="/admin/users"
-                                element={
-                                    <ProtectedRoute requiredRole="admin">
-                                        <UserManager />
-                                    </ProtectedRoute>
-                                }
-                            />
+                                <Route
+                                    path="/cart"
+                                    element={
+                                        <ProtectedRoute>
+                                            <CartPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/cart/manage"
+                                    element={
+                                        <ProtectedRoute>
+                                            <CartManagement />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/checkout"
+                                    element={
+                                        <ProtectedRoute>
+                                            <CheckoutPage />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/my-requests"
+                                    element={
+                                        <ProtectedRoute>
+                                            <MyRequests />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/my-apartments"
+                                    element={
+                                        <ProtectedRoute>
+                                            <MyApartments />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/residents"
+                                    element={
+                                        <ProtectedRoute requiredRole="building_manager">
+                                            <Residents />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/admin/blocks"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <BlockManager />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/admin/buildings"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <BuildingManager />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/admin/floors"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <FloorManager />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/admin/apartments"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <ApartmentManager />
+                                        </ProtectedRoute>
+                                    }
+                                />
+                                <Route
+                                    path="/admin/users"
+                                    element={
+                                        <ProtectedRoute requiredRole="admin">
+                                            <UserManager />
+                                        </ProtectedRoute>
+                                    }
+                                />
 
-                            {/* Default Routes */}
-                            <Route path="*" element={<Navigate to="/home" replace />} />
-                        </Routes>
+                                {/* Default Routes */}
+                                <Route path="*" element={<Navigate to="/home" replace />} />
+                            </Routes>
 
-                        {/* Toast Notifications */}
-                        <Toaster
-                            position="top-right"
-                            toastOptions={{
-                                duration: 4000,
-                                style: {
-                                    background: '#363636',
-                                    color: '#fff',
-                                },
-                                success: {
-                                    duration: 3000,
-                                    iconTheme: {
-                                        primary: '#28a745',
-                                        secondary: '#fff',
+                            {/* Toast Notifications */}
+                            <Toaster
+                                position="top-right"
+                                toastOptions={{
+                                    duration: 4000,
+                                    style: {
+                                        background: '#363636',
+                                        color: '#fff',
                                     },
-                                },
-                                error: {
-                                    duration: 5000,
-                                    iconTheme: {
-                                        primary: '#dc3545',
-                                        secondary: '#fff',
+                                    success: {
+                                        duration: 3000,
+                                        iconTheme: {
+                                            primary: '#28a745',
+                                            secondary: '#fff',
+                                        },
                                     },
-                                },
-                            }}
-                        />
-                    </AppLayout>
-                </Router>
-            </CartProvider>
-        </AuthProvider>
+                                    error: {
+                                        duration: 5000,
+                                        iconTheme: {
+                                            primary: '#dc3545',
+                                            secondary: '#fff',
+                                        },
+                                    },
+                                }}
+                            />
+                        </AppLayout>
+                    </Router>
+                </CartProvider>
+            </AuthProvider>
+        </ErrorBoundary>
     );
 }
 
