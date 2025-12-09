@@ -74,7 +74,7 @@ export const CartProvider = ({ children }) => {
         try {
             const token = getAuthToken();
             const response = await axios.post(
-                `${API_URL}/add`,
+                API_URL,
                 { apartmentId, mode, months },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -167,8 +167,8 @@ export const CartProvider = ({ children }) => {
         try {
             const token = getAuthToken();
             const response = await axios.patch(
-                `${API_URL}/${itemId}/toggle`,
-                {},
+                `${API_URL}/${itemId}/select`,
+                { selected: !cartItems.find(item => item.id === itemId)?.selected },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -217,7 +217,7 @@ export const CartProvider = ({ children }) => {
         setError(null);
         try {
             const token = getAuthToken();
-            const response = await axios.delete(`${API_URL}/clear`, {
+            const response = await axios.delete(API_URL, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -281,6 +281,7 @@ export const CartProvider = ({ children }) => {
 
             if (response.data.success) {
                 await fetchCart(); // Refresh cart (selected items should be removed)
+                console.log('✅ Checkout Success:', response.data.data);
                 toast.success(response.data.message);
                 return {
                     success: true,

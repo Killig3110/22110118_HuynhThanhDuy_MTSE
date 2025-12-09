@@ -19,22 +19,24 @@ const createLeaseRequest = async (req, res) => {
             contactPhone
         } = req.body;
 
-        // Block staff roles from creating lease requests
+        // Block staff roles AND existing residents/owners from creating lease requests
         const staffRoles = ['admin', 'building_manager', 'security', 'technician', 'accountant'];
         if (userRole && staffRoles.includes(userRole)) {
             return res.status(403).json({
                 success: false,
-                message: 'Staff members cannot create lease requests. Only residents or guests can request to rent/buy apartments.'
+                message: 'Staff members cannot create lease requests. Only guests or users can request to rent/buy apartments.'
             });
         }
 
-        // Allow only residents (logged in) or guests (not logged in with contact info)
-        if (userRole && userRole !== 'resident') {
+        // Block residents and owners from creating new lease requests (they already have apartments)
+        if (userRole && ['resident', 'owner'].includes(userRole)) {
             return res.status(403).json({
                 success: false,
-                message: 'Only residents can request rent/buy. Please contact an administrator if you need assistance.'
+                message: 'Residents and owners cannot create new lease requests. Please contact management if you need assistance.'
             });
         }
+
+        // Allow: guest (no user), user role, or authenticated users without resident/owner/staff roles
 
         // For guests (userId is null), require contact information
         if (!userId) {
@@ -74,11 +76,15 @@ const createLeaseRequest = async (req, res) => {
             }
         }
 
-        // Determine next status: owner must approve first if there is an owner and requester is not owner
+        // Determine next status based on type:
+        // - RENT: owner approval required first (if owner exists), then manager
+        // - BUY: manager approval only
         let nextStatus = 'pending_manager';
-        if (apartment.ownerId && apartment.ownerId !== userId) {
+        if (type === 'rent' && apartment.ownerId && apartment.ownerId !== userId) {
+            // For rent requests, owner must approve first
             nextStatus = 'pending_owner';
         }
+        // For buy requests, always go straight to manager approval
 
         const lease = await LeaseRequest.create({
             apartmentId,
@@ -94,6 +100,20 @@ const createLeaseRequest = async (req, res) => {
             contactPhone: contactPhone || req.user?.phone || null,
             status: nextStatus
         });
+
+        // Log guest request for admin notification
+        if (!userId) {
+            console.log('🔔 NEW GUEST LEASE REQUEST:', {
+                id: lease.id,
+                apartment: `#${apartment.apartmentNumber} - ${apartment.floor?.building?.buildingCode}`,
+                type: lease.type,
+                contactName: lease.contactName,
+                contactEmail: lease.contactEmail,
+                contactPhone: lease.contactPhone,
+                status: lease.status,
+                timestamp: new Date().toISOString()
+            });
+        }
 
         res.status(201).json({
             success: true,
@@ -280,7 +300,20 @@ const decideLeaseRequest = async (req, res) => {
                 });
 
                 if (residentRole) {
+                    const oldRole = requester.role?.name || 'user';
                     await requester.update({ roleId: residentRole.id }, { transaction });
+
+                    // Log role upgrade for notification
+                    console.log('✨ USER ROLE UPGRADED:', {
+                        userId: requester.id,
+                        email: requester.email,
+                        oldRole: oldRole,
+                        newRole: 'resident',
+                        reason: 'Lease request approved',
+                        leaseId: lease.id,
+                        apartmentNumber: lease.apartment?.apartmentNumber,
+                        timestamp: new Date().toISOString()
+                    });
                 }
             }
         }

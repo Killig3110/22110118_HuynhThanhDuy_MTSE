@@ -283,13 +283,22 @@ class CartController {
             // Create lease requests for each item
             const leaseRequests = [];
             for (const item of cartItems) {
+                // Determine status based on type and owner:
+                // - RENT: owner approval required first (if owner exists), then manager
+                // - BUY: manager approval only
+                let status = 'pending_manager';
+                if (item.mode === 'rent' && item.apartment.ownerId && item.apartment.ownerId !== userId) {
+                    // For rent requests, owner must approve first
+                    status = 'pending_owner';
+                }
+
                 const leaseRequest = await LeaseRequest.create({
                     userId,
                     apartmentId: item.apartmentId,
                     type: item.mode,
                     duration: item.months,
                     note: item.note,
-                    status: 'pending_owner'
+                    status
                 }, { transaction });
 
                 leaseRequests.push(leaseRequest);

@@ -115,16 +115,16 @@ const ApartmentDetailsModal = ({ apartment, onClose }) => (
                     </div>
                 )}
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <button className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
+                <div className="flex flex-col gap-3">
+                    <button
+                        onClick={() => window.location.href = `/apartments/${apartment.id}`}
+                        className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
                         View Full Details
-                    </button>
-                    <button className="flex-1 bg-gray-600 text-white py-2 px-4 rounded-lg hover:bg-gray-700 transition-colors">
-                        Schedule Visit
                     </button>
                     <button
                         onClick={onClose}
-                        className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+                        className="w-full bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
                     >
                         Close
                     </button>
