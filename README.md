@@ -19,12 +19,12 @@ Mỗi thư mục tương ứng với một bài tập riêng biệt, có cấu t
 
 | Bài tập | Tên thư mục | Mô tả ngắn |
 |----------|--------------|------------|
-| **BT01** | `lab02_mongo_crud` | Làm quen với ExpressJS + MongoDB, tạo server cơ bản và render template EJS với CRUD operations. |
-| **BT02** | `lab03_typescript` | Port từ BT01 sang **TypeScript**: Express + Mongoose + EJS, hỗ trợ upload ảnh, role/position models và seeder. |
-| **BT03** | `lab04_fullstack_react_express` | Full-stack authentication system với **React** (frontend) + **Express + MySQL/Sequelize** (backend), JWT authentication, protected routes. |
-| **BT04-08** | `lab05_ManageBuilding` | **Enterprise Building Management System** - Full-stack React + Express + MySQL với GraphQL, role-based access control, engagement features (favorites, reviews, views, cart), marketplace, interactive 3D building map. |
-| **BT09** | `lab07_CartComponent` | Reusable **React Cart Component Library** - Standalone UI components cho apartment rental/purchase cart với custom hooks. |
-| **Portfolio** | `my-portfolio` | Personal portfolio website sử dụng **React 19 + Vite**. |
+| **BT02** | `lab02_mongo_crud` | Làm quen với ExpressJS + MongoDB, tạo server cơ bản và render template EJS với CRUD operations. |
+| **BT03** | `lab03_typescript` | Port từ BT01 sang **TypeScript**: Express + Mongoose + EJS, hỗ trợ upload ảnh, role/position models và seeder. |
+| **BT04** | `lab04_fullstack_react_express` | Full-stack authentication system với **React** (frontend) + **Express + MySQL/Sequelize** (backend), JWT authentication, protected routes. |
+| **BT05-08** | `lab05_ManageBuilding` | **Enterprise Building Management System** - Full-stack React + Express + MySQL với GraphQL, role-based access control, engagement features (favorites, reviews, views, cart), marketplace, interactive 3D building map. |
+| **BT07** | `lab07_CartComponent` | Reusable **React Cart Component Library** - Standalone UI components cho apartment rental/purchase cart với custom hooks. |
+| **BT01** | `my-portfolio` | Personal portfolio website sử dụng **React 19 + Vite**. |
 
 ---
 
