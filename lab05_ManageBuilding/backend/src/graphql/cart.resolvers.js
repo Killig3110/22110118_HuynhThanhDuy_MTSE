@@ -91,15 +91,20 @@ const cartResolvers = {
         },
 
         /**
-         * Clear all cart items
+         * Checkout cart - Process payment for selected items
          */
-        clearCart: async (_, __, { user }) => {
+        checkoutCart: async (_, { input }, { user }) => {
             if (!user) {
                 throw new Error('Authentication required');
             }
 
-            await cartService.clearCart(user.id);
-            return true;
+            const { paymentMethod, note } = input;
+
+            // Use cart service checkout method
+            return await cartService.checkoutCart(user.id, {
+                paymentMethod,
+                note
+            });
         }
     },
 

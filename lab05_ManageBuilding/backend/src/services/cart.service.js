@@ -381,6 +381,189 @@ class CartService {
             addedAt: cartItem.addedAt
         };
     }
+
+    /**
+     * Checkout cart - Process payment and complete apartment transactions
+     */
+    async checkoutCart(userId, data) {
+        const { sequelize } = require('../config/database');
+        const { Payment, Role, LeaseRequest, HouseholdMember } = require('../models');
+        const { paymentMethod, note } = data;
+
+        // Start transaction
+        const transaction = await sequelize.transaction();
+
+        try {
+            // 1. Get selected cart items
+            const cartItems = await Cart.findAll({
+                where: {
+                    userId,
+                    selected: true
+                },
+                include: [
+                    {
+                        model: Apartment,
+                        as: 'apartment',
+                        include: [
+                            {
+                                model: Floor,
+                                as: 'floor',
+                                include: [
+                                    {
+                                        model: Building,
+                                        as: 'building'
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ],
+                transaction
+            });
+
+            if (cartItems.length === 0) {
+                throw new Error('No items selected for checkout');
+            }
+
+            // 2. Validate all apartments are still available
+            for (const item of cartItems) {
+                const apartment = item.apartment;
+                if (apartment.status !== 'available') {
+                    throw new Error(`Apartment ${apartment.apartmentNumber} is no longer available`);
+                }
+
+                // Check if mode matches apartment listing
+                if (item.mode === 'rent' && !apartment.isListedForRent) {
+                    throw new Error(`Apartment ${apartment.apartmentNumber} is not available for rent`);
+                }
+                if (item.mode === 'buy' && !apartment.isListedForSale) {
+                    throw new Error(`Apartment ${apartment.apartmentNumber} is not available for sale`);
+                }
+            }
+
+            // 3. Get user and check current role
+            const user = await User.findByPk(userId, {
+                include: [{ model: Role, as: 'role' }],
+                transaction
+            });
+
+            const payments = [];
+            const completedApartments = [];
+
+            // 4. Process each cart item
+            for (const cartItem of cartItems) {
+                const apartment = cartItem.apartment;
+                const amount = cartItem.mode === 'rent'
+                    ? (cartItem.priceSnapshot || apartment.monthlyRent) * (cartItem.months || 1)
+                    : (cartItem.priceSnapshot || apartment.salePrice);
+
+                // Create payment record
+                const payment = await Payment.create({
+                    apartmentId: apartment.id,
+                    billingId: null, // Will be linked to billing later
+                    amount: amount,
+                    paymentMethod: paymentMethod,
+                    paymentDate: new Date(),
+                    status: 'successful',
+                    transactionId: `TXN-${Date.now()}-${apartment.id}`,
+                    reference: `CART-${cartItem.id}`,
+                    notes: note || `Payment for ${cartItem.mode} of apartment ${apartment.apartmentNumber}`,
+                    receivedBy: userId,
+                    receiptNumber: `RCP-${Date.now()}-${apartment.id}`,
+                    isActive: true
+                }, { transaction });
+
+                // Update apartment status and owner/tenant
+                const updateData = {
+                    status: cartItem.mode === 'buy' ? 'sold' : 'occupied'
+                };
+
+                if (cartItem.mode === 'buy') {
+                    updateData.ownerId = userId;
+                    updateData.isListedForSale = false;
+                } else {
+                    updateData.tenantId = userId;
+                    updateData.isListedForRent = false;
+                }
+
+                await apartment.update(updateData, { transaction });
+
+                // Create household member entry
+                await HouseholdMember.create({
+                    apartmentId: apartment.id,
+                    userId: userId,
+                    relationship: cartItem.mode === 'buy' ? 'owner' : 'tenant',
+                    isActive: true,
+                    moveInDate: new Date()
+                }, { transaction });
+
+                // Update related lease request if exists
+                await LeaseRequest.update({
+                    status: 'completed',
+                    completedAt: new Date()
+                }, {
+                    where: {
+                        apartmentId: apartment.id,
+                        userId: userId,
+                        status: 'approved'
+                    },
+                    transaction
+                });
+
+                payments.push(payment);
+                completedApartments.push(apartment);
+            }
+
+            // 5. Upgrade user role to resident if not already
+            const residentRole = await Role.findOne({
+                where: { name: 'resident' },
+                transaction
+            });
+
+            if (user.role.name !== 'resident' && user.role.name !== 'owner') {
+                await user.update({
+                    roleId: residentRole.id
+                }, { transaction });
+            }
+
+            // 6. Clear checked out items from cart
+            await Cart.destroy({
+                where: {
+                    userId,
+                    selected: true
+                },
+                transaction
+            });
+
+            // Commit transaction
+            await transaction.commit();
+
+            return {
+                success: true,
+                message: `Successfully completed checkout for ${cartItems.length} apartment(s)`,
+                payments: payments.map(p => ({
+                    id: p.id,
+                    transactionId: p.transactionId,
+                    amount: parseFloat(p.amount),
+                    status: p.status,
+                    paymentMethod: p.paymentMethod,
+                    paymentDate: p.paymentDate.toISOString()
+                })),
+                completedApartments: completedApartments.map(a => ({
+                    id: a.id,
+                    apartmentNumber: a.apartmentNumber,
+                    type: a.type,
+                    status: a.status
+                })),
+                userRole: residentRole.name
+            };
+
+        } catch (error) {
+            // Rollback transaction on error
+            await transaction.rollback();
+            throw error;
+        }
+    }
 }
 
 module.exports = new CartService();
