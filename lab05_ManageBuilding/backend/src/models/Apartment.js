@@ -129,6 +129,11 @@ const Apartment = sequelize.define('Apartment', {
         allowNull: true,
         comment: 'JSON array of apartment amenities'
     },
+    images: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        comment: 'JSON array of apartment image URLs (3-5 unique images per apartment)'
+    },
     leaseStartDate: {
         type: DataTypes.DATE,
         allowNull: true
