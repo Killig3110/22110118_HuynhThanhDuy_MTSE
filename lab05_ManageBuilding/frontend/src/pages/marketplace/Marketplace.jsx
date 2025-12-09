@@ -70,10 +70,7 @@ const Marketplace = () => {
     };
 
     const openContactModal = (apt, mode) => {
-        // Residents có thể gửi trực tiếp mà không cần nhập thêm
-        if (user && user.role?.name === 'resident') {
-            return submitRequest(apt, mode, {});
-        }
+        // For guests and users without contact info filled, show modal
         setContactModal({
             open: true,
             mode,
@@ -211,38 +208,63 @@ const Marketplace = () => {
                             )}
                         </div>
 
-                        <div className="mt-4 flex gap-2">
+                        <div className="mt-4 flex flex-col gap-2">
                             <button
                                 onClick={() => navigate(`/apartments/${apt.id}`)}
-                                className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 flex items-center justify-center gap-1"
+                                className="w-full px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 flex items-center justify-center gap-1"
                             >
                                 <Eye className="h-4 w-4" />
-                                View
+                                View Details
                             </button>
 
-                            {user && (
-                                <>
+                            {/* Guest/User: Show request buttons */}
+                            {(!user || user.role?.name === 'user') && (
+                                <div className="flex gap-2">
+                                    {apt.isListedForRent && (
+                                        <button
+                                            onClick={() => openContactModal(apt, 'rent')}
+                                            className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center justify-center gap-1"
+                                            title="Request to Rent"
+                                        >
+                                            Request Rent
+                                        </button>
+                                    )}
+                                    {apt.isListedForSale && (
+                                        <button
+                                            onClick={() => openContactModal(apt, 'buy')}
+                                            className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 flex items-center justify-center gap-1"
+                                            title="Request to Buy"
+                                        >
+                                            Request Buy
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Logged-in User: Show add to cart buttons */}
+                            {user && user.role?.name === 'user' && (
+                                <div className="flex gap-2">
                                     {apt.isListedForRent && (
                                         <button
                                             onClick={() => handleAddToCart(apt, 'rent')}
-                                            className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center justify-center gap-1"
+                                            className="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 flex items-center justify-center gap-1"
                                             title="Add to Cart (Rent)"
                                         >
                                             <ShoppingCart className="h-4 w-4" />
-                                            Rent
+                                            Cart (Rent)
                                         </button>
                                     )}
                                     {apt.isListedForSale && (
                                         <button
                                             onClick={() => handleAddToCart(apt, 'buy')}
-                                            className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 flex items-center justify-center gap-1"
+                                            className="flex-1 px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 flex items-center justify-center gap-1"
                                             title="Add to Cart (Buy)"
                                         >
                                             <ShoppingCart className="h-4 w-4" />
-                                            Buy
+                                            Cart (Buy)
                                         </button>
                                     )}
-                                </>
+                                </div>
                             )}
                         </div>
                     </div>

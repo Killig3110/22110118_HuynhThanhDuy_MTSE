@@ -227,8 +227,8 @@ const ApartmentDetailPage = () => {
                             {/* Status Badge */}
                             <div className="flex items-center space-x-2 mb-6">
                                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${apartment.status === 'vacant'
-                                        ? 'bg-green-100 text-green-800'
-                                        : 'bg-red-100 text-red-800'
+                                    ? 'bg-green-100 text-green-800'
+                                    : 'bg-red-100 text-red-800'
                                     }`}>
                                     {apartment.status === 'vacant' ? 'Available' : 'Not Available'}
                                 </span>
@@ -364,22 +364,41 @@ const ApartmentDetailPage = () => {
                             <div className="space-y-3">
                                 {isAvailable && (
                                     <>
-                                        {user && (
-                                            <button
-                                                onClick={handleAddToCart}
-                                                className="w-full py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors"
-                                            >
-                                                Add to Cart
-                                            </button>
+                                        {/* Guest or User: Show request and cart options */}
+                                        {(!user || user.role?.name === 'user') && (
+                                            <>
+                                                <button
+                                                    onClick={handleRequestLease}
+                                                    className="w-full py-3 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition-colors"
+                                                >
+                                                    {user ? 'Request Lease' : 'Request as Guest'}
+                                                </button>
+                                                {user && (
+                                                    <button
+                                                        onClick={handleAddToCart}
+                                                        className="w-full py-3 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 font-medium transition-colors"
+                                                    >
+                                                        Add to Cart
+                                                    </button>
+                                                )}
+                                            </>
                                         )}
-                                        <button
-                                            onClick={handleRequestLease}
-                                            className="w-full py-3 px-4 bg-green-600 text-white rounded-md hover:bg-green-700 font-medium transition-colors"
-                                        >
-                                            {user ? 'Request Lease' : 'Request as Guest'}
-                                        </button>
+
+                                        {/* Resident/Owner/Staff: Cannot request */}
+                                        {user && ['resident', 'owner', 'admin', 'building_manager', 'security', 'technician', 'accountant'].includes(user.role?.name) && (
+                                            <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 text-sm text-yellow-800">
+                                                You cannot request apartments as a {user.role?.name}.
+                                            </div>
+                                        )}
                                     </>
                                 )}
+
+                                {!isAvailable && (
+                                    <div className="bg-red-50 border border-red-200 rounded-md p-4 text-sm text-red-800">
+                                        This apartment is currently not available for rent or sale.
+                                    </div>
+                                )}
+
                                 <button
                                     onClick={() => navigate('/buildings/map')}
                                     className="w-full py-3 px-4 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 font-medium transition-colors"
