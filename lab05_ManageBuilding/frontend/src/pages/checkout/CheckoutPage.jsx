@@ -10,7 +10,7 @@ import { ArrowLeft, CheckCircle } from 'lucide-react';
 const CheckoutPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
-    const { cartItems, isLoading, clearCart } = useCart();
+    const { cartItems, isLoading, checkout } = useCart();
     const [paymentMethod, setPaymentMethod] = useState('credit_card');
     const [isProcessing, setIsProcessing] = useState(false);
     const [orderComplete, setOrderComplete] = useState(false);
@@ -34,23 +34,15 @@ const CheckoutPage = () => {
         setIsProcessing(true);
 
         try {
-            // Simulate API call for order creation
-            await new Promise(resolve => setTimeout(resolve, 2000));
-
-            // TODO: Replace with actual API call
-            // const response = await axios.post('/api/orders/create', {
-            //   cartItems: selectedItems.map(item => item.id),
-            //   paymentMethod,
-            //   userId: user.id
-            // });
-
-            setOrderComplete(true);
-
-            // Clear cart after successful checkout
-            setTimeout(async () => {
-                await clearCart();
-                toast.success('Order placed successfully!');
-            }, 1500);
+            const result = await checkout();
+            
+            if (result.success) {
+                setOrderComplete(true);
+                toast.success(`Successfully created ${result.data.count} lease request(s)!`);
+            } else {
+                toast.error(result.error || 'Failed to process checkout');
+                setIsProcessing(false);
+            }
 
         } catch (error) {
             console.error('Checkout error:', error);

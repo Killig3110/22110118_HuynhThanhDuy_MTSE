@@ -82,8 +82,8 @@ const GuestLeaseRequestModal = ({ isOpen, onClose, apartment }) => {
         } catch (error) {
             console.error('Failed to submit request:', error);
             toast.error(
-                error.response?.data?.message || 
-                error.response?.data?.error?.message || 
+                error.response?.data?.message ||
+                error.response?.data?.error?.message ||
                 'Failed to submit request. Please try again.'
             );
         } finally {
@@ -180,9 +180,8 @@ const GuestLeaseRequestModal = ({ isOpen, onClose, apartment }) => {
                                         name="contactName"
                                         value={formData.contactName}
                                         onChange={handleChange}
-                                        className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                            errors.contactName ? 'border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.contactName ? 'border-red-500' : 'border-gray-300'
+                                            }`}
                                         placeholder="John Doe"
                                     />
                                 </div>
@@ -204,9 +203,8 @@ const GuestLeaseRequestModal = ({ isOpen, onClose, apartment }) => {
                                         name="contactEmail"
                                         value={formData.contactEmail}
                                         onChange={handleChange}
-                                        className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                            errors.contactEmail ? 'border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.contactEmail ? 'border-red-500' : 'border-gray-300'
+                                            }`}
                                         placeholder="john@example.com"
                                     />
                                 </div>
@@ -228,9 +226,8 @@ const GuestLeaseRequestModal = ({ isOpen, onClose, apartment }) => {
                                         name="contactPhone"
                                         value={formData.contactPhone}
                                         onChange={handleChange}
-                                        className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                                            errors.contactPhone ? 'border-red-500' : 'border-gray-300'
-                                        }`}
+                                        className={`w-full pl-10 pr-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.contactPhone ? 'border-red-500' : 'border-gray-300'
+                                            }`}
                                         placeholder="+1 (234) 567-8900"
                                     />
                                 </div>

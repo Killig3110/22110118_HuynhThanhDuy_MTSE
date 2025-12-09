@@ -215,13 +215,13 @@ function App() {
                                 path="/marketplace"
                                 element={<Marketplace />}
                             />
-                            
+
                             {/* Apartment Detail - Public Access */}
                             <Route
                                 path="/apartments/:id"
                                 element={<ApartmentDetailPage />}
                             />
-                            
+
                             <Route
                                 path="/cart"
                                 element={

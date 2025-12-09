@@ -242,17 +242,17 @@ class CartController {
     async checkout(req, res) {
         const sequelize = require('../config/database');
         const { LeaseRequest, Apartment, CartItem } = require('../models');
-        
+
         const transaction = await sequelize.transaction();
-        
+
         try {
             const userId = req.user.id;
-            
+
             // Get all selected cart items
             const cartItems = await CartItem.findAll({
-                where: { 
+                where: {
                     userId,
-                    selected: true 
+                    selected: true
                 },
                 include: [{
                     model: Apartment,

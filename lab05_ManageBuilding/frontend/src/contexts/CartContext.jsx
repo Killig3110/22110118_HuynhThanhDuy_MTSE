@@ -256,6 +256,48 @@ export const CartProvider = ({ children }) => {
         }
     };
 
+    // Checkout cart - Create lease requests for selected items
+    const checkout = async () => {
+        if (!user) {
+            toast.error('Please login to checkout');
+            return { success: false };
+        }
+
+        const selectedItems = cartItems.filter(item => item.selected);
+        if (selectedItems.length === 0) {
+            toast.error('No items selected for checkout');
+            return { success: false };
+        }
+
+        setIsLoading(true);
+        setError(null);
+        try {
+            const token = getAuthToken();
+            const response = await axios.post(
+                `${API_URL}/checkout`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.success) {
+                await fetchCart(); // Refresh cart (selected items should be removed)
+                toast.success(response.data.message);
+                return { 
+                    success: true, 
+                    data: response.data.data 
+                };
+            }
+        } catch (err) {
+            console.error('Error during checkout:', err);
+            const errorMsg = err.response?.data?.message || 'Failed to checkout';
+            setError(errorMsg);
+            toast.error(errorMsg);
+            return { success: false, error: errorMsg };
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     // Calculate totals from local cart items
     const calculateTotals = () => {
         const selectedItems = cartItems.filter(item => item.selected);
@@ -296,6 +338,7 @@ export const CartProvider = ({ children }) => {
         toggleSelection,
         selectAll,
         clearCart,
+        checkout,
         fetchCart,
         getCartSummary,
         calculateTotals,

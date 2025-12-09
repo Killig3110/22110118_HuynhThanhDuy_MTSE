@@ -6,10 +6,10 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import AddToCartModal from '../../components/cart/AddToCartModal';
 import GuestLeaseRequestModal from '../../components/leases/GuestLeaseRequestModal';
-import { 
-    Home, MapPin, Maximize, Bed, Bath, Car, Calendar, 
-    DollarSign, CheckCircle, XCircle, Heart, Share2, 
-    ChevronLeft, ChevronRight, Building2, Layers 
+import {
+    Home, MapPin, Maximize, Bed, Bath, Car, Calendar,
+    DollarSign, CheckCircle, XCircle, Heart, Share2,
+    ChevronLeft, ChevronRight, Building2, Layers
 } from 'lucide-react';
 
 const ApartmentDetailPage = () => {
@@ -17,7 +17,7 @@ const ApartmentDetailPage = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { addToCart } = useCart();
-    
+
     const [apartment, setApartment] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -110,8 +110,8 @@ const ApartmentDetailPage = () => {
     }
 
     // Mock images - replace with actual apartment.images
-    const images = apartment.images?.length > 0 
-        ? apartment.images 
+    const images = apartment.images?.length > 0
+        ? apartment.images
         : [
             'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
             'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
@@ -177,9 +177,8 @@ const ApartmentDetailPage = () => {
                                 <button
                                     key={idx}
                                     onClick={() => setSelectedImageIndex(idx)}
-                                    className={`aspect-[4/3] rounded-lg overflow-hidden ${
-                                        selectedImageIndex === idx ? 'ring-2 ring-blue-600' : ''
-                                    }`}
+                                    className={`aspect-[4/3] rounded-lg overflow-hidden ${selectedImageIndex === idx ? 'ring-2 ring-blue-600' : ''
+                                        }`}
                                 >
                                     <img src={img} alt="" className="w-full h-full object-cover" />
                                 </button>
@@ -227,11 +226,10 @@ const ApartmentDetailPage = () => {
 
                             {/* Status Badge */}
                             <div className="flex items-center space-x-2 mb-6">
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                                    apartment.status === 'vacant' 
-                                        ? 'bg-green-100 text-green-800' 
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${apartment.status === 'vacant'
+                                        ? 'bg-green-100 text-green-800'
                                         : 'bg-red-100 text-red-800'
-                                }`}>
+                                    }`}>
                                     {apartment.status === 'vacant' ? 'Available' : 'Not Available'}
                                 </span>
                                 {apartment.isListedForRent && (
@@ -294,9 +292,8 @@ const ApartmentDetailPage = () => {
                                 {amenities.map((amenity) => (
                                     <div
                                         key={amenity.name}
-                                        className={`flex items-center space-x-2 ${
-                                            amenity.available ? 'text-green-600' : 'text-gray-400'
-                                        }`}
+                                        className={`flex items-center space-x-2 ${amenity.available ? 'text-green-600' : 'text-gray-400'
+                                            }`}
                                     >
                                         {amenity.available ? (
                                             <CheckCircle className="h-5 w-5" />
