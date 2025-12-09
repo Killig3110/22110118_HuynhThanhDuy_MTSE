@@ -14,6 +14,9 @@ const FacilityBooking = require('./FacilityBooking');
 const Announcement = require('./Announcement');
 const LeaseRequest = require('./LeaseRequest');
 const Cart = require('./Cart');
+const ApartmentFavorite = require('./ApartmentFavorite');
+const ApartmentView = require('./ApartmentView');
+const ApartmentReview = require('./ApartmentReview');
 
 // User associations (existing)
 User.belongsTo(Role, {
@@ -310,6 +313,63 @@ Apartment.hasMany(Cart, {
     as: 'cartItems'
 });
 
+// ApartmentFavorite associations
+ApartmentFavorite.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'
+});
+User.hasMany(ApartmentFavorite, {
+    foreignKey: 'userId',
+    as: 'favorites'
+});
+
+ApartmentFavorite.belongsTo(Apartment, {
+    foreignKey: 'apartmentId',
+    as: 'apartment'
+});
+Apartment.hasMany(ApartmentFavorite, {
+    foreignKey: 'apartmentId',
+    as: 'favorites'
+});
+
+// ApartmentView associations
+ApartmentView.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'
+});
+User.hasMany(ApartmentView, {
+    foreignKey: 'userId',
+    as: 'views'
+});
+
+ApartmentView.belongsTo(Apartment, {
+    foreignKey: 'apartmentId',
+    as: 'apartment'
+});
+Apartment.hasMany(ApartmentView, {
+    foreignKey: 'apartmentId',
+    as: 'views'
+});
+
+// ApartmentReview associations
+ApartmentReview.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'
+});
+User.hasMany(ApartmentReview, {
+    foreignKey: 'userId',
+    as: 'reviews'
+});
+
+ApartmentReview.belongsTo(Apartment, {
+    foreignKey: 'apartmentId',
+    as: 'apartment'
+});
+Apartment.hasMany(ApartmentReview, {
+    foreignKey: 'apartmentId',
+    as: 'reviews'
+});
+
 module.exports = {
     User,
     Role,
@@ -326,5 +386,8 @@ module.exports = {
     FacilityBooking,
     Announcement,
     LeaseRequest,
-    Cart
+    Cart,
+    ApartmentFavorite,
+    ApartmentView,
+    ApartmentReview
 };

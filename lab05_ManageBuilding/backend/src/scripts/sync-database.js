@@ -38,12 +38,21 @@ async function syncDatabase() {
         console.log('  - FacilityBookings');
         console.log('  - Announcements');
         console.log('  - LeaseRequests');
-        console.log('  - Carts ⭐ (NEW)');
+        console.log('  - Carts');
+        console.log('  - ApartmentFavorites ⭐ (NEW)');
+        console.log('  - ApartmentViews ⭐ (NEW)');
+        console.log('  - ApartmentReviews ⭐ (NEW)');
 
-        console.log('\n✨ Cart table created successfully with associations!');
-        console.log('   - userId -> Users');
-        console.log('   - apartmentId -> Apartments');
-        console.log('   - Unique constraint: user_id + apartment_id + mode');
+        console.log('\n✨ New engagement tables created successfully!');
+        console.log('   ApartmentFavorites:');
+        console.log('     - userId -> Users, apartmentId -> Apartments');
+        console.log('     - Unique constraint: user_id + apartment_id');
+        console.log('   ApartmentViews:');
+        console.log('     - userId (nullable) -> Users, apartmentId -> Apartments');
+        console.log('     - Supports guest tracking via ipAddress');
+        console.log('   ApartmentReviews:');
+        console.log('     - userId -> Users, apartmentId -> Apartments');
+        console.log('     - Rating 1-5, unique constraint: user_id + apartment_id');
 
         process.exit(0);
     } catch (error) {

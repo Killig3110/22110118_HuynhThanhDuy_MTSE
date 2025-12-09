@@ -1,5 +1,7 @@
 const { Op } = require('sequelize');
 const { Apartment, Floor, Building, HouseholdMember } = require('../models');
+const { getSimilarApartments: getSimilarApts } = require('../services/apartment.service');
+const { getApartmentStats: getAptStats } = require('../services/apartment.stats.service');
 
 /**
  * Fuzzy search and filter apartments across blocks/buildings/floors
@@ -807,6 +809,53 @@ const updateStatus = async (req, res) => {
     }
 };
 
+/**
+ * Get apartment statistics
+ */
+const getApartmentStats = async (req, res) => {
+    try {
+        const apartmentId = parseInt(req.params.id);
+
+        const stats = await getAptStats(apartmentId);
+
+        res.status(200).json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        console.error('Error getting apartment stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get apartment statistics',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Get similar apartments
+ */
+const getSimilarApartments = async (req, res) => {
+    try {
+        const apartmentId = parseInt(req.params.id);
+        const limit = parseInt(req.query.limit) || 6;
+
+        const similarApartments = await getSimilarApts(apartmentId, limit);
+
+        res.status(200).json({
+            success: true,
+            data: similarApartments
+        });
+    } catch (error) {
+        console.error('Error getting similar apartments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get similar apartments',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     searchApartments,
     getApartmentsByFloor,
@@ -817,5 +866,7 @@ module.exports = {
     getApartmentsByBuilding,
     getMyApartments,
     updateListing,
-    updateStatus
+    updateStatus,
+    getApartmentStats,
+    getSimilarApartments
 };

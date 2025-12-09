@@ -16,6 +16,8 @@ const apartmentRoutes = require('./routes/apartment.routes');
 const searchRoutes = require('./routes/search.routes');
 const leaseRoutes = require('./routes/lease.routes');
 const cartRoutes = require('./routes/cart.routes');
+const favoriteRoutes = require('./routes/favorite.routes');
+const reviewRoutes = require('./routes/review.routes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/validation');
@@ -104,6 +106,8 @@ app.use('/api/apartments', apartmentRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/leases', leaseRoutes);
 app.use('/api/cart', cartRoutes);
+app.use('/api/favorites', favoriteRoutes);
+app.use('/api', reviewRoutes);  // Review routes have their own path prefixes
 
 // Health check with database connection test
 app.get('/api/health', async (req, res) => {

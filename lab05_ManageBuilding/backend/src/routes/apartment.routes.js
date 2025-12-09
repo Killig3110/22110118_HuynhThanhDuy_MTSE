@@ -10,7 +10,9 @@ const {
     getApartmentsByBuilding,
     getMyApartments,
     updateListing,
-    updateStatus
+    updateStatus,
+    getApartmentStats,
+    getSimilarApartments
 } = require('../controllers/apartment.controller');
 const {
     authMiddleware,
@@ -20,6 +22,7 @@ const {
 } = require('../middleware/auth');
 const { handleValidationErrors } = require('../middleware/validation');
 const { generalLimiter, adminLimiter } = require('../middleware/rateLimiter');
+const viewController = require('../controllers/view.controller');
 
 const router = express.Router();
 
@@ -196,6 +199,48 @@ router.patch('/:id/status',
         handleValidationErrors
     ],
     updateStatus
+);
+
+/**
+ * @route   POST /api/apartments/:id/view
+ * @desc    Track apartment view
+ * @access  Public with optional auth
+ */
+router.post('/:id/view',
+    generalLimiter,
+    optionalAuth,
+    viewController.trackView
+);
+
+/**
+ * @route   GET /api/apartments/recently-viewed
+ * @desc    Get recently viewed apartments for current user
+ * @access  Protected
+ */
+router.get('/recently-viewed',
+    generalLimiter,
+    authMiddleware,
+    viewController.getRecentlyViewed
+);
+
+/**
+ * @route   GET /api/apartments/:id/similar
+ * @desc    Get similar apartments
+ * @access  Public
+ */
+router.get('/:id/similar',
+    generalLimiter,
+    getSimilarApartments
+);
+
+/**
+ * @route   GET /api/apartments/:id/stats
+ * @desc    Get apartment statistics
+ * @access  Public
+ */
+router.get('/:id/stats',
+    generalLimiter,
+    getApartmentStats
 );
 
 module.exports = router;

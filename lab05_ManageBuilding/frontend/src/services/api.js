@@ -173,6 +173,27 @@ export const apartmentAPI = {
     create: (payload) => api.post('/apartments', payload),
     update: (id, payload) => api.put(`/apartments/${id}`, payload),
     remove: (id) => api.delete(`/apartments/${id}`),
+    trackView: (id) => api.post(`/apartments/${id}/view`),
+    getRecentlyViewed: (limit = 20) => api.get('/apartments/recently-viewed', { params: { limit } }),
+    getSimilar: (id, limit = 6) => api.get(`/apartments/${id}/similar`, { params: { limit } }),
+    getStats: (id) => api.get(`/apartments/${id}/stats`),
+};
+
+export const favoriteAPI = {
+    add: (apartmentId) => api.post(`/favorites/${apartmentId}`),
+    remove: (apartmentId) => api.delete(`/favorites/${apartmentId}`),
+    getAll: (page = 1, limit = 20) => api.get('/favorites', { params: { page, limit } }),
+    check: (apartmentId) => api.get(`/favorites/check/${apartmentId}`),
+};
+
+export const reviewAPI = {
+    create: (apartmentId, data) => api.post(`/apartments/${apartmentId}/reviews`, data),
+    update: (reviewId, data) => api.put(`/reviews/${reviewId}`, data),
+    delete: (reviewId) => api.delete(`/reviews/${reviewId}`),
+    getByApartment: (apartmentId, page = 1, limit = 10) => 
+        api.get(`/apartments/${apartmentId}/reviews`, { params: { page, limit } }),
+    getMyReviews: (page = 1, limit = 10) => 
+        api.get('/my-reviews', { params: { page, limit } }),
 };
 
 export default api;
