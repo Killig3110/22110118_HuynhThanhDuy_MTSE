@@ -32,6 +32,7 @@ const ApartmentDetailPage = () => {
     const [isFavorite, setIsFavorite] = useState(false);
     const [stats, setStats] = useState(null);
     const [canReview, setCanReview] = useState(false);
+    const [reviewsKey, setReviewsKey] = useState(0);
 
     useEffect(() => {
         loadApartment();
@@ -39,7 +40,7 @@ const ApartmentDetailPage = () => {
         checkFavoriteStatus();
         loadStats();
         checkReviewEligibility();
-    }, [id]);
+    }, [id, user]);
 
     const loadApartment = async () => {
         try {
@@ -58,6 +59,10 @@ const ApartmentDetailPage = () => {
     const trackView = async () => {
         try {
             await apartmentAPI.trackView(id);
+            // Refresh stats after tracking view
+            setTimeout(() => {
+                loadStats();
+            }, 500);
         } catch (error) {
             console.error('Error tracking view:', error);
         }
@@ -132,6 +137,7 @@ const ApartmentDetailPage = () => {
 
     const handleReviewSubmitted = () => {
         loadStats(); // Refresh stats after new review
+        setReviewsKey(prev => prev + 1); // Force ReviewList to re-fetch
     };
 
     if (loading) {
@@ -385,7 +391,7 @@ const ApartmentDetailPage = () => {
                                     onReviewSubmitted={handleReviewSubmitted}
                                 />
                             )}
-                            <ReviewList apartmentId={id} />
+                            <ReviewList key={reviewsKey} apartmentId={id} />
                         </div>
                     </div>
 

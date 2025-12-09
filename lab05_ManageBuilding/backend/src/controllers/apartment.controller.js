@@ -1,7 +1,31 @@
 const { Op } = require('sequelize');
+const Fuse = require('fuse.js');
 const { Apartment, Floor, Building, HouseholdMember } = require('../models');
 const { getSimilarApartments: getSimilarApts } = require('../services/apartment.service');
 const { getApartmentStats: getAptStats } = require('../services/apartment.stats.service');
+
+// Helper functions for fuzzy search
+const normalize = (text = '') =>
+    text
+        .toString()
+        .normalize('NFD')
+        .replace(/\p{Diacritic}/gu, '')
+        .toLowerCase()
+        .trim();
+
+const toPlain = (model) => (model?.toJSON ? model.toJSON() : model);
+
+const buildSearchableText = (apartment) => {
+    const parts = [
+        apartment.apartmentNumber,
+        apartment.type,
+        apartment.description,
+        apartment.floor?.floorNumber,
+        apartment.floor?.building?.name,
+        apartment.floor?.building?.buildingCode
+    ];
+    return normalize(parts.filter(Boolean).join(' '));
+};
 
 /**
  * Fuzzy search and filter apartments across blocks/buildings/floors
@@ -34,7 +58,6 @@ const searchApartments = async (req, res) => {
 
         const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
         const parsedLimit = Math.min(parseInt(limit, 10) || 20, 100);
-        const offset = (parsedPage - 1) * parsedLimit;
 
         // Base filters
         const whereClause = { isActive: true };
@@ -79,24 +102,7 @@ const searchApartments = async (req, res) => {
             whereClause.isListedForSale = isListedForSale === 'true';
         }
 
-        // Tokenized fuzzy search on multiple fields
-        const tokens = q.trim().split(/\s+/).filter(Boolean);
-        if (tokens.length) {
-            whereClause[Op.and] = tokens.map(token => {
-                const pattern = `%${token}%`;
-                return {
-                    [Op.or]: [
-                        { apartmentNumber: { [Op.like]: pattern } },
-                        { type: { [Op.like]: pattern } },
-                        { description: { [Op.like]: pattern } },
-                        { '$floor.building.name$': { [Op.like]: pattern } },
-                        { '$floor.building.buildingCode$': { [Op.like]: pattern } }
-                    ]
-                };
-            });
-        }
-
-        // Include tree so we can filter by building/block and return context
+        // Include tree for filtering by building/block
         const include = [
             {
                 model: Floor,
@@ -111,45 +117,114 @@ const searchApartments = async (req, res) => {
         ];
 
         if (buildingId) {
-            include[0].where = { ...(include[0].where || {}), buildingId: parseInt(buildingId, 10) };
+            include[0].where = { buildingId: parseInt(buildingId, 10) };
+            include[0].required = true;
         }
 
         if (blockId) {
-            include[0].include[0].where = { ...(include[0].include[0].where || {}), blockId: parseInt(blockId, 10) };
+            include[0].include[0].where = { blockId: parseInt(blockId, 10) };
             include[0].include[0].required = true;
+            include[0].required = true;
         }
 
-        // Sorting
+        // Fetch all apartments matching filters (without text search)
+        const allApartments = await Apartment.findAll({
+            where: whereClause,
+            include,
+            order: [['apartmentNumber', 'ASC']]
+        });
+
+        // Apply search if query text provided
+        let filteredApartments = allApartments;
+        const hasSearchQuery = q.trim().length > 0;
+
+        if (hasSearchQuery) {
+            const plainApartments = allApartments.map(toPlain);
+            const searchQuery = normalize(q);
+
+            // First: Try exact match on apartment number, building code, or building name
+            const exactMatches = plainApartments.filter(apt => {
+                const aptNum = normalize(apt.apartmentNumber);
+                const buildingCode = normalize(apt.floor?.building?.buildingCode || '');
+                const buildingName = normalize(apt.floor?.building?.name || '');
+                const type = normalize(apt.type || '');
+
+                return aptNum.includes(searchQuery) ||
+                    buildingCode.includes(searchQuery) ||
+                    buildingName.includes(searchQuery) ||
+                    type.includes(searchQuery);
+            });
+
+            // If exact matches found, use them
+            if (exactMatches.length > 0) {
+                filteredApartments = exactMatches;
+            } else {
+                // For apartment number searches (pure digits), don't fuzzy match
+                // This prevents "1020" from matching "0204"
+                const isPureDigitSearch = /^\d+$/.test(q.trim());
+
+                if (isPureDigitSearch) {
+                    // No exact match for digit search = no results
+                    filteredApartments = [];
+                } else {
+                    // Otherwise, fall back to fuzzy search for text queries
+                    const searchableApartments = plainApartments.map(apt => ({
+                        ...apt,
+                        _searchText: buildSearchableText(apt)
+                    }));
+
+                    const fuse = new Fuse(searchableApartments, {
+                        includeScore: true,
+                        threshold: 0.3,
+                        distance: 100,
+                        minMatchCharLength: 2,
+                        ignoreLocation: false,
+                        keys: ['_searchText']
+                    });
+
+                    const searchResults = fuse.search(searchQuery);
+                    filteredApartments = searchResults.map(({ item }) => {
+                        delete item._searchText;
+                        return item;
+                    });
+                }
+            }
+        } else {
+            filteredApartments = allApartments.map(toPlain);
+        }
+
+        // Apply sorting
         const allowedSortFields = ['apartmentNumber', 'monthlyRent', 'area', 'bedrooms', 'bathrooms', 'createdAt', 'updatedAt'];
         const normalizedSortBy = allowedSortFields.includes(sortBy) ? sortBy : 'apartmentNumber';
         const normalizedSortOrder = ['ASC', 'DESC'].includes(String(sortOrder).toUpperCase())
             ? String(sortOrder).toUpperCase()
             : 'ASC';
 
-        const order = [];
-        if (normalizedSortBy === 'area' || normalizedSortBy === 'monthlyRent' || normalizedSortBy === 'bedrooms' || normalizedSortBy === 'bathrooms') {
-            order.push([normalizedSortBy, normalizedSortOrder]);
-        } else {
-            order.push([normalizedSortBy, normalizedSortOrder]);
-        }
-        // Stable secondary ordering
-        order.push([{ model: Floor, as: 'floor' }, 'floorNumber', 'ASC']);
-        order.push(['apartmentNumber', 'ASC']);
+        filteredApartments.sort((a, b) => {
+            let aVal = a[normalizedSortBy];
+            let bVal = b[normalizedSortBy];
 
-        const { count, rows: apartments } = await Apartment.findAndCountAll({
-            where: whereClause,
-            include,
-            order,
-            limit: parsedLimit,
-            offset,
-            distinct: true
+            if (typeof aVal === 'string') {
+                aVal = aVal.toLowerCase();
+                bVal = bVal.toLowerCase();
+            }
+
+            if (normalizedSortOrder === 'ASC') {
+                return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+            } else {
+                return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+            }
         });
 
+        // Pagination
+        const count = filteredApartments.length;
         const totalPages = Math.ceil(count / parsedLimit);
+        const offset = (parsedPage - 1) * parsedLimit;
+        const apartments = filteredApartments.slice(offset, offset + parsedLimit);
 
         res.status(200).json({
             success: true,
-            message: tokens.length ? 'Fuzzy search completed' : 'Apartments retrieved',
+            message: hasSearchQuery ? 'Fuzzy search completed' : 'Apartments retrieved',
             data: apartments,
             filters: {
                 q,

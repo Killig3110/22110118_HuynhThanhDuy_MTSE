@@ -28,15 +28,9 @@ const createReview = async (req, res) => {
         }
 
         // Check if user is tenant or owner of this apartment
-        const householdMember = await HouseholdMember.findOne({
-            where: {
-                apartmentId,
-                email: req.user.email,
-                isActive: true
-            }
-        });
+        const isTenantOrOwner = apartment.tenantId === userId || apartment.ownerId === userId;
 
-        if (!householdMember) {
+        if (!isTenantOrOwner) {
             return res.status(403).json({
                 success: false,
                 message: 'Only tenants or owners can review this apartment'
