@@ -15,6 +15,55 @@ const {
 } = require('../models');
 
 /**
+ * Generate diverse apartment images based on apartment type
+ */
+function generateApartmentImages(type, seed) {
+    const imageCollections = {
+        studio: [
+            'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800',
+            'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800',
+            'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800',
+            'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800',
+            'https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=800',
+        ],
+        '1bhk': [
+            'https://images.unsplash.com/photo-1556912173-46c336c7fd55?w=800',
+            'https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=800',
+            'https://images.unsplash.com/photo-1515263487990-61b07816b324?w=800',
+            'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800',
+            'https://images.unsplash.com/photo-1505691938895-1758d7feb511?w=800',
+        ],
+        '2bhk': [
+            'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800',
+            'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=800',
+            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+            'https://images.unsplash.com/photo-1600607687644-c7171b42498f?w=800',
+            'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
+        ],
+        '3bhk': [
+            'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?w=800',
+            'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800',
+            'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800',
+            'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800',
+            'https://images.unsplash.com/photo-1600607687920-4e2a09cf159d?w=800',
+        ],
+    };
+
+    const collection = imageCollections[type] || imageCollections['1bhk'];
+
+    // Return 3-5 images per apartment, varying based on seed
+    const numImages = 3 + (seed % 3); // 3-5 images
+    const startIndex = seed % collection.length;
+
+    const images = [];
+    for (let i = 0; i < numImages; i++) {
+        images.push(collection[(startIndex + i) % collection.length]);
+    }
+
+    return images;
+}
+
+/**
  * Tạo database nếu chưa tồn tại
  */
 async function createDatabase() {
@@ -203,9 +252,39 @@ async function seedDatabase() {
             positionId: positionMap.Resident.id,
             password: hashedPassword,
             isActive: true,
+            lastLogin: new Date(),
         }));
 
-        const users = await User.bulkCreate([...coreUsersPayload, ...residentPayload], { returning: true });
+        // Add user role accounts (for testing guest/user workflow)
+        const userPayload = [
+            {
+                email: 'user@building.com',
+                firstName: 'Test',
+                lastName: 'User',
+                phone: '0902000001',
+                roleId: roleMap.user.id,
+                positionId: positionMap.Resident.id,
+                password: hashedPassword,
+                isActive: true,
+                lastLogin: new Date(),
+            },
+            {
+                email: 'user2@building.com',
+                firstName: 'Jane',
+                lastName: 'Doe',
+                phone: '0902000002',
+                roleId: roleMap.user.id,
+                positionId: positionMap.Resident.id,
+                password: hashedPassword,
+                isActive: true,
+                lastLogin: new Date(),
+            },
+        ];
+
+        // Update core users with lastLogin
+        const coreWithLogin = coreUsersPayload.map(u => ({ ...u, lastLogin: new Date() }));
+
+        const users = await User.bulkCreate([...coreWithLogin, ...residentPayload, ...userPayload], { returning: true });
         const userByEmail = users.reduce((acc, user) => {
             acc[user.email] = user;
             return acc;
@@ -301,21 +380,48 @@ async function seedDatabase() {
         console.log('🏠 Creating apartments for each floor...');
         const apartments = [];
         const apartmentsPerFloor = 6;
-        const statusCycle = ['occupied', 'vacant', 'for_rent', 'for_sale', 'under_renovation'];
+        // More vacant apartments for rent/sale (60% vacant, 20% occupied, 20% renovation)
+        const statusOptions = [
+            'vacant', 'vacant', 'vacant', // 50% vacant
+            'occupied', // 16.7% occupied  
+            'under_renovation', // 16.7% under renovation
+            'vacant' // More vacant
+        ];
 
         for (const floor of floors) {
             for (let aptNumber = 1; aptNumber <= apartmentsPerFloor; aptNumber++) {
                 const apartmentNumber = `${floor.floorNumber.toString().padStart(2, '0')}${aptNumber.toString().padStart(2, '0')}`;
-                const status = statusCycle[(floor.floorNumber + aptNumber) % statusCycle.length];
+                const status = statusOptions[(floor.floorNumber + aptNumber) % statusOptions.length];
 
-                const isOwned = status !== 'for_sale';
-                const ownerCandidate = residentUsers.length
+                // For vacant apartments, decide if for rent, for sale, or both
+                let isListedForRent = false;
+                let isListedForSale = false;
+
+                if (status === 'vacant') {
+                    const listingType = (floor.floorNumber + aptNumber) % 3;
+                    if (listingType === 0) {
+                        isListedForRent = true; // 33% for rent only
+                    } else if (listingType === 1) {
+                        isListedForSale = true; // 33% for sale only
+                    } else {
+                        isListedForRent = true; // 33% for both
+                        isListedForSale = true;
+                    }
+                }
+
+                const isOwned = status === 'occupied';
+                const ownerCandidate = residentUsers.length && isOwned
                     ? residentUsers[(floor.id + aptNumber) % residentUsers.length]
                     : null;
-                const tenantCandidate = residentUsers.length
+                const tenantCandidate = residentUsers.length && status === 'occupied'
                     ? residentUsers[(floor.id + aptNumber + 3) % residentUsers.length]
                     : null;
-                const isTenant = status === 'occupied';
+
+                // Generate diverse apartment images based on type
+                const apartmentImages = generateApartmentImages(
+                    ['1bhk', '2bhk', '3bhk', 'studio'][aptNumber % 4],
+                    aptNumber
+                );
 
                 const apartment = await Apartment.create({
                     apartmentNumber,
@@ -329,12 +435,13 @@ async function seedDatabase() {
                     monthlyRent: 3000000 + floor.floorNumber * 50000 + aptNumber * 25000,
                     maintenanceFee: 150000 + aptNumber * 5000,
                     status,
-                    ownerId: isOwned ? ownerCandidate?.id || null : null,
-                    tenantId: isTenant ? tenantCandidate?.id || null : null,
-                    isListedForRent: status === 'for_rent',
-                    isListedForSale: status === 'for_sale',
+                    ownerId: ownerCandidate?.id || null,
+                    tenantId: tenantCandidate?.id || null,
+                    isListedForRent,
+                    isListedForSale,
                     salePrice: 1200000000 + floor.floorNumber * 20000000 + aptNumber * 5000000,
                     description: `Căn hộ ${apartmentNumber} tại tầng ${floor.floorNumber}`,
+                    images: apartmentImages, // Add images array
                     isActive: true,
                 });
                 apartments.push(apartment);
