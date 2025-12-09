@@ -6,6 +6,8 @@ import * as yup from 'yup';
 import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
+const managementRoles = ['admin', 'building_manager', 'security', 'technician', 'accountant'];
+
 const schema = yup.object({
     email: yup
         .string()
@@ -47,7 +49,9 @@ const Login = () => {
         const result = await login(data);
 
         if (result.success) {
-            navigate('/dashboard');
+            const role = result.user?.role?.name || result.user?.roleName;
+            const target = managementRoles.includes(role) ? '/dashboard' : '/home';
+            navigate(target);
         } else {
             setError('root', {
                 type: 'manual',

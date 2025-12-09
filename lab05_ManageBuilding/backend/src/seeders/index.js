@@ -68,6 +68,8 @@ async function seedDatabase() {
             { name: 'admin', description: 'Quản lý toàn hệ thống' },
             { name: 'building_manager', description: 'Quản lý tòa nhà cụ thể' },
             { name: 'resident', description: 'Cư dân sinh sống' },
+            { name: 'user', description: 'Người dùng đã đăng ký, chưa là cư dân/chủ hộ' },
+            { name: 'guest', description: 'Khách chưa đăng ký' },
             { name: 'security', description: 'Quản lý an ninh' },
             { name: 'technician', description: 'Bảo trì kỹ thuật' },
             { name: 'accountant', description: 'Quản lý tài chính' },
@@ -306,9 +308,13 @@ async function seedDatabase() {
                 const apartmentNumber = `${floor.floorNumber.toString().padStart(2, '0')}${aptNumber.toString().padStart(2, '0')}`;
                 const status = statusCycle[(floor.floorNumber + aptNumber) % statusCycle.length];
 
-                const isOwned = status !== 'for_sale'; // căn for_sale chưa có chủ để admin có thể niêm yết
-                const ownerCandidate = residentUsers[(floor.id + aptNumber) % residentUsers.length] || residentUsers[0];
-                const tenantCandidate = residentUsers[(floor.id + aptNumber + 3) % residentUsers.length] || residentUsers[1];
+                const isOwned = status !== 'for_sale';
+                const ownerCandidate = residentUsers.length
+                    ? residentUsers[(floor.id + aptNumber) % residentUsers.length]
+                    : null;
+                const tenantCandidate = residentUsers.length
+                    ? residentUsers[(floor.id + aptNumber + 3) % residentUsers.length]
+                    : null;
                 const isTenant = status === 'occupied';
 
                 const apartment = await Apartment.create({
@@ -323,8 +329,8 @@ async function seedDatabase() {
                     monthlyRent: 3000000 + floor.floorNumber * 50000 + aptNumber * 25000,
                     maintenanceFee: 150000 + aptNumber * 5000,
                     status,
-                    ownerId: isOwned ? ownerCandidate.id : null,
-                    tenantId: isTenant ? tenantCandidate.id : null,
+                    ownerId: isOwned ? ownerCandidate?.id || null : null,
+                    tenantId: isTenant ? tenantCandidate?.id || null : null,
                     isListedForRent: status === 'for_rent',
                     isListedForSale: status === 'for_sale',
                     salePrice: 1200000000 + floor.floorNumber * 20000000 + aptNumber * 5000000,
@@ -343,7 +349,7 @@ async function seedDatabase() {
             [
                 rentCandidate && {
                     apartmentId: rentCandidate.id,
-                    userId: residentUsers[0]?.id,
+                    userId: residentUsers[0]?.id || null,
                     type: 'rent',
                     status: 'pending_manager',
                     startDate: '2024-12-01',
@@ -352,7 +358,7 @@ async function seedDatabase() {
                 },
                 saleCandidate && {
                     apartmentId: saleCandidate.id,
-                    userId: residentUsers[1]?.id,
+                    userId: residentUsers[1]?.id || residentUsers[0]?.id || null,
                     type: 'buy',
                     status: 'pending_manager',
                     totalPrice: saleCandidate.salePrice,

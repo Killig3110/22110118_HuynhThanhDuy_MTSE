@@ -141,8 +141,28 @@ const LeaseRequests = () => {
                                     </td>
                                     <td className="px-4 py-2 text-sm capitalize">{req.type}</td>
                                     <td className="px-4 py-2 text-sm text-gray-700">
-                                        {req.requester?.firstName} {req.requester?.lastName}
-                                        <div className="text-xs text-gray-500">{req.requester?.email}</div>
+                                        {req.requester
+                                            ? (
+                                                <>
+                                                    {req.requester.firstName} {req.requester.lastName}
+                                                    <div className="text-xs text-gray-500">{req.requester.email}</div>
+                                                </>
+                                            )
+                                            : (
+                                                <>
+                                                    <div className="font-medium text-gray-800">Guest</div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {req.contactName || 'N/A'}
+                                                    </div>
+                                                    <div className="text-xs text-gray-500">
+                                                        {req.contactEmail || 'N/A'}
+                                                    </div>
+                                                    {req.contactPhone && (
+                                                        <div className="text-xs text-gray-500">{req.contactPhone}</div>
+                                                    )}
+                                                </>
+                                            )
+                                        }
                                     </td>
                                     <td className="px-4 py-2 text-sm text-gray-700">
                                         {req.type === 'rent'
@@ -188,7 +208,7 @@ const LeaseRequests = () => {
                                                 )}
                                             </>
                                         )}
-                                        {req.status === 'pending_owner' && isOwner(req) && (
+                                        {req.status === 'pending_owner' && (isOwner(req) || canApprove) && (
                                             <>
                                                 <button
                                                     onClick={() => handleOwnerDecision(req.id, 'approve')}

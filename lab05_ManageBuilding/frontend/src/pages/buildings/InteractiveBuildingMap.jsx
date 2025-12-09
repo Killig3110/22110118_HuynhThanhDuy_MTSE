@@ -29,6 +29,7 @@ import BlockFormModal from '../../components/map/BlockFormModal';
 import BuildingFormModal from '../../components/map/BuildingFormModal';
 import FloorFormModal from '../../components/map/FloorFormModal';
 import ApartmentFormModal from '../../components/map/ApartmentFormModal';
+import AddToCartModal from '../../components/cart/AddToCartModal';
 import '../../styles/InteractiveBuildingMap.css';
 
 // Add CSS styles for 3D effects
@@ -87,6 +88,8 @@ const InteractiveBuildingMap = () => {
     const [buildingModalOpen, setBuildingModalOpen] = useState(false);
     const [floorModalOpen, setFloorModalOpen] = useState(false);
     const [apartmentModalOpen, setApartmentModalOpen] = useState(false);
+    const [addToCartModalOpen, setAddToCartModalOpen] = useState(false);
+    const [selectedApartmentForCart, setSelectedApartmentForCart] = useState(null);
     const [editingBlock, setEditingBlock] = useState(null);
     const [editingBuilding, setEditingBuilding] = useState(null);
     const [editingFloor, setEditingFloor] = useState(null);
@@ -472,13 +475,13 @@ const InteractiveBuildingMap = () => {
         </div>
     );
 
-const getStatusColor = (status) => {
-    switch (status) {
-        case 'occupied': return 'bg-red-500';
-        case 'vacant': return 'bg-green-500';
-        case 'maintenance': return 'bg-yellow-500';
-        default: return 'bg-gray-400';
-    }
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'occupied': return 'bg-red-500';
+            case 'vacant': return 'bg-green-500';
+            case 'maintenance': return 'bg-yellow-500';
+            default: return 'bg-gray-400';
+        }
     };
 
     // Action helpers
@@ -562,6 +565,11 @@ const getStatusColor = (status) => {
         }
     };
 
+    const handleAddToCart = (apartment) => {
+        setSelectedApartmentForCart(apartment);
+        setAddToCartModalOpen(true);
+    };
+
     const openContextMenu = (event, level, target) => {
         if (!isAdmin) return;
         event.preventDefault();
@@ -576,7 +584,7 @@ const getStatusColor = (status) => {
 
     const closeContextMenu = () => setContextMenu({ visible: false, x: 0, y: 0, target: null, level: null });
 
-// ---- Action helpers (add/edit/delete) will be attached below ----
+    // ---- Action helpers (add/edit/delete) will be attached below ----
 
     // Modal save handlers
     const handleSaveBlock = async (formData) => {
@@ -815,8 +823,8 @@ const getStatusColor = (status) => {
                             setSelectedApartmentDetails={setSelectedApartmentDetails}
                         />
                     )}
+                </div>
             </div>
-        </div>
 
             {renderContextMenu()}
 
@@ -859,6 +867,16 @@ const getStatusColor = (status) => {
                     defaultFloorId={selectedFloor?.id}
                 />
             )}
+
+            {/* Add to Cart Modal */}
+            <AddToCartModal
+                isOpen={addToCartModalOpen}
+                onClose={() => {
+                    setAddToCartModalOpen(false);
+                    setSelectedApartmentForCart(null);
+                }}
+                apartment={selectedApartmentForCart}
+            />
         </div>
     );
 };
@@ -938,19 +956,19 @@ const BlocksView = ({ blocks = [], onBlockSelect, viewMode, canEdit = false, onA
                                 const blockColor = colors[index % colors.length];
 
                                 return (
-                        <div
-                            key={block.id}
-                            className="absolute cursor-pointer group"
-                            style={{
-                                left: `${20 + (index * 15)}%`,
-                                top: `${30 + (Math.sin(index * 0.8) * 25)}%`,
-                                transform: `translateZ(${index * 30}px) rotateY(${index * 12}deg)`,
-                                animation: `float 4s ease-in-out infinite`,
-                                animationDelay: `${index * 0.8}s`
-                            }}
-                            onClick={() => onBlockSelect(block)}
-                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'block', block); }}
-                        >
+                                    <div
+                                        key={block.id}
+                                        className="absolute cursor-pointer group"
+                                        style={{
+                                            left: `${20 + (index * 15)}%`,
+                                            top: `${30 + (Math.sin(index * 0.8) * 25)}%`,
+                                            transform: `translateZ(${index * 30}px) rotateY(${index * 12}deg)`,
+                                            animation: `float 4s ease-in-out infinite`,
+                                            animationDelay: `${index * 0.8}s`
+                                        }}
+                                        onClick={() => onBlockSelect(block)}
+                                        onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'block', block); }}
+                                    >
                                         <div className="relative transform-gpu transition-all duration-500 hover:scale-125 hover:-translate-y-4 hover:rotate-y-12">
                                             {/* Enhanced Shadow with blur */}
                                             <div className="absolute inset-0 bg-gradient-to-br from-black/30 to-black/60 rounded-2xl transform translate-y-6 translate-x-4 scale-110 blur-lg group-hover:scale-125 group-hover:translate-y-8 transition-all duration-500"></div>
@@ -1760,6 +1778,7 @@ const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery 
                                 canEdit={canEdit}
                                 onEdit={() => onEditApartment?.(apartment)}
                                 onDelete={() => onDeleteApartment?.(apartment)}
+                                onAddToCart={user ? handleAddToCart : null}
                             />
                             <ApartmentActions
                                 apartment={apartment}
@@ -1797,16 +1816,16 @@ const ApartmentsView = ({ apartments = [], selectedFloor, viewMode, searchQuery 
                 <div className="relative bg-gradient-to-br from-indigo-100 to-purple-200 rounded-lg p-8 min-h-96">
                     {/* 3D Apartment Layout */}
                     <div className="grid grid-cols-4 gap-6 h-80 perspective-1000">
-                    {filteredApartments.map((apartment, index) => (
-                        <div
-                            key={apartment.id}
-                            className="group cursor-pointer transform transition-all duration-300 hover:scale-110"
-                            style={{
-                                transform: `rotateY(${index % 2 === 0 ? '5deg' : '-5deg'}) rotateX(10deg)`,
-                            }}
-                            onClick={() => handleApartmentClick(apartment)}
-                            onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'apartment', apartment); }}
-                        >
+                        {filteredApartments.map((apartment, index) => (
+                            <div
+                                key={apartment.id}
+                                className="group cursor-pointer transform transition-all duration-300 hover:scale-110"
+                                style={{
+                                    transform: `rotateY(${index % 2 === 0 ? '5deg' : '-5deg'}) rotateX(10deg)`,
+                                }}
+                                onClick={() => handleApartmentClick(apartment)}
+                                onContextMenu={(e) => { e.preventDefault(); onShowContextMenu?.(e, 'apartment', apartment); }}
+                            >
                                 {/* Apartment 3D Box */}
                                 <div className="relative transform-style-preserve-3d">
                                     {/* Front Face */}

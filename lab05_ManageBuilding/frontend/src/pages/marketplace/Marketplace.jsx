@@ -12,6 +12,15 @@ const Marketplace = () => {
         type: 'all',
         listing: 'rent' // rent | sale | all
     });
+    const [contactModal, setContactModal] = useState({
+        open: false,
+        mode: 'rent',
+        apartment: null,
+        contactName: '',
+        contactEmail: '',
+        contactPhone: '',
+        note: ''
+    });
 
     const load = async () => {
         try {
@@ -41,29 +50,49 @@ const Marketplace = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters.listing]);
 
-    const request = async (apt, mode) => {
-        if (!user) {
-            toast.error('Please login to submit request');
-            return;
+    const openContactModal = (apt, mode) => {
+        // Residents có thể gửi trực tiếp mà không cần nhập thêm
+        if (user && user.role?.name === 'resident') {
+            return submitRequest(apt, mode, {});
         }
-        if (user?.role?.name !== 'resident') {
-            toast.error('Only residents can submit rent/buy requests');
-            return;
-        }
+        setContactModal({
+            open: true,
+            mode,
+            apartment: apt,
+            contactName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '',
+            contactEmail: user?.email || '',
+            contactPhone: user?.phone || '',
+            note: ''
+        });
+    };
+
+    const submitRequest = async (apt, mode, contact) => {
         try {
-            const payload = {
+            let payload = {
                 apartmentId: apt.id,
                 type: mode,
-                note: ''
+                note: '',
+                ...contact
             };
+
             if (mode === 'rent') payload.monthlyRent = apt.monthlyRent;
             if (mode === 'buy') payload.totalPrice = apt.salePrice;
             await leaseAPI.create(payload);
             toast.success('Request sent');
+            setContactModal({ open: false, mode: 'rent', apartment: null, contactName: '', contactEmail: '', contactPhone: '' });
         } catch (error) {
             console.error('Request failed', error);
             toast.error(error.response?.data?.message || 'Request failed');
         }
+    };
+
+    const handleModalSubmit = () => {
+        const { apartment, mode, contactName, contactEmail, contactPhone, note } = contactModal;
+        if (!contactName || !contactEmail || !contactPhone) {
+            toast.error('Vui lòng nhập đầy đủ thông tin liên hệ');
+            return;
+        }
+        submitRequest(apartment, mode, { contactName, contactEmail, contactPhone, note });
     };
 
     return (
@@ -126,26 +155,21 @@ const Marketplace = () => {
                         <div className="mt-3 flex gap-2">
                             {apt.isListedForRent && (
                                 <button
-                                    onClick={() => request(apt, 'rent')}
-                                    className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50"
-                                    disabled={user?.role?.name !== 'resident'}
+                                    onClick={() => openContactModal(apt, 'rent')}
+                                    className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
                                 >
                                     Request Rent
                                 </button>
                             )}
                             {apt.isListedForSale && (
                                 <button
-                                    onClick={() => request(apt, 'buy')}
-                                    className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 disabled:opacity-50"
-                                    disabled={user?.role?.name !== 'resident'}
+                                    onClick={() => openContactModal(apt, 'buy')}
+                                    className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700"
                                 >
                                     Request Buy
                                 </button>
                             )}
                         </div>
-                        {user?.role?.name !== 'resident' && (
-                            <p className="mt-2 text-xs text-amber-600">Chỉ cư dân mới có thể gửi yêu cầu.</p>
-                        )}
                     </div>
                 ))}
             </div>
@@ -155,6 +179,73 @@ const Marketplace = () => {
             )}
             {!loading && listings.length === 0 && (
                 <div className="text-center text-sm text-gray-500 mt-4">No listings.</div>
+            )}
+
+            {/* Contact Modal */}
+            {contactModal.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+                        <div className="flex items-start justify-between mb-4">
+                            <div>
+                                <div className="text-sm text-gray-500">Gửi yêu cầu</div>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    #{contactModal.apartment?.apartmentNumber} • {contactModal.apartment?.floor?.building?.buildingCode}
+                                </h3>
+                                <div className="text-xs text-gray-500">
+                                    {contactModal.mode === 'rent' ? 'Thuê căn hộ' : 'Mua căn hộ'}
+                                </div>
+                            </div>
+                            <button
+                                className="text-gray-400 hover:text-gray-600"
+                                onClick={() => setContactModal({ open: false, mode: 'rent', apartment: null, contactName: '', contactEmail: '', contactPhone: '', note: '' })}
+                                aria-label="Close"
+                            >
+                                ✕
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            <input
+                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                placeholder="Họ và tên"
+                                value={contactModal.contactName}
+                                onChange={(e) => setContactModal((prev) => ({ ...prev, contactName: e.target.value }))}
+                            />
+                            <input
+                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                placeholder="Email"
+                                value={contactModal.contactEmail}
+                                onChange={(e) => setContactModal((prev) => ({ ...prev, contactEmail: e.target.value }))}
+                            />
+                            <input
+                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                placeholder="Số điện thoại"
+                                value={contactModal.contactPhone}
+                                onChange={(e) => setContactModal((prev) => ({ ...prev, contactPhone: e.target.value }))}
+                            />
+                            <textarea
+                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                rows={3}
+                                placeholder="Ghi chú thêm (tùy chọn)"
+                                value={contactModal.note}
+                                onChange={(e) => setContactModal((prev) => ({ ...prev, note: e.target.value }))}
+                            />
+                        </div>
+                        <div className="mt-6 flex justify-end gap-3">
+                            <button
+                                className="px-4 py-2 text-sm rounded-lg border"
+                                onClick={() => setContactModal({ open: false, mode: 'rent', apartment: null, contactName: '', contactEmail: '', contactPhone: '', note: '' })}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                className="px-4 py-2 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                                onClick={handleModalSubmit}
+                            >
+                                Gửi yêu cầu
+                            </button>
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

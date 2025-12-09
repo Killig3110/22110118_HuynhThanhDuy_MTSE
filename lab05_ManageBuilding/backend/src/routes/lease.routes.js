@@ -7,7 +7,7 @@ const {
     cancelLeaseRequest,
     ownerDecision
 } = require('../controllers/lease.controller');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, optionalAuth, requireRole } = require('../middleware/auth');
 const { generalLimiter, adminLimiter } = require('../middleware/rateLimiter');
 const { handleValidationErrors } = require('../middleware/validation');
 
@@ -21,6 +21,24 @@ const validateCreate = [
     body('monthlyRent').optional().isFloat({ min: 0 }).withMessage('monthlyRent must be positive'),
     body('totalPrice').optional().isFloat({ min: 0 }).withMessage('totalPrice must be positive'),
     body('note').optional().isLength({ max: 500 }).withMessage('Note too long'),
+    // Guest contact info validation
+    body('contactName')
+        .if((value, { req }) => !req.user || !req.user.id)
+        .trim()
+        .notEmpty().withMessage('Contact name is required for guest requests')
+        .isLength({ min: 2, max: 100 }).withMessage('Contact name must be between 2 and 100 characters'),
+    body('contactEmail')
+        .if((value, { req }) => !req.user || !req.user.id)
+        .trim()
+        .notEmpty().withMessage('Contact email is required for guest requests')
+        .isEmail().withMessage('Contact email must be a valid email address')
+        .normalizeEmail(),
+    body('contactPhone')
+        .if((value, { req }) => !req.user || !req.user.id)
+        .trim()
+        .notEmpty().withMessage('Contact phone is required for guest requests')
+        .matches(/^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/)
+        .withMessage('Contact phone must be a valid phone number'),
     handleValidationErrors
 ];
 
@@ -43,7 +61,7 @@ router.get('/',
 
 router.post('/',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     validateCreate,
     createLeaseRequest
 );

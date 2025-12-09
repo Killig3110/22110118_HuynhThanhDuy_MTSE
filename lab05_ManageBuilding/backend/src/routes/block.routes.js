@@ -10,6 +10,7 @@ const {
 } = require('../controllers/block.controller');
 const {
     authMiddleware,
+    optionalAuth,
     requireRole,
     managerMiddleware
 } = require('../middleware/auth');
@@ -53,7 +54,7 @@ const validateBlock = [
  */
 router.get('/',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getBlocks
 );
 
@@ -64,7 +65,7 @@ router.get('/',
  */
 router.get('/:id',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getBlockById
 );
 
@@ -75,7 +76,7 @@ router.get('/:id',
  */
 router.get('/:id/buildings',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     getBuildingsByBlock
 );
 

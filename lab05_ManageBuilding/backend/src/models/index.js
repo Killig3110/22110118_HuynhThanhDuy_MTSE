@@ -13,6 +13,7 @@ const Facility = require('./Facility');
 const FacilityBooking = require('./FacilityBooking');
 const Announcement = require('./Announcement');
 const LeaseRequest = require('./LeaseRequest');
+const Cart = require('./Cart');
 
 // User associations (existing)
 User.belongsTo(Role, {
@@ -290,6 +291,25 @@ User.hasMany(Announcement, {
     as: 'createdAnnouncements'
 });
 
+// Cart associations
+Cart.belongsTo(User, {
+    foreignKey: 'userId',
+    as: 'user'
+});
+User.hasMany(Cart, {
+    foreignKey: 'userId',
+    as: 'cartItems'
+});
+
+Cart.belongsTo(Apartment, {
+    foreignKey: 'apartmentId',
+    as: 'apartment'
+});
+Apartment.hasMany(Cart, {
+    foreignKey: 'apartmentId',
+    as: 'cartItems'
+});
+
 module.exports = {
     User,
     Role,
@@ -305,5 +325,6 @@ module.exports = {
     Facility,
     FacilityBooking,
     Announcement,
-    LeaseRequest
+    LeaseRequest,
+    Cart
 };

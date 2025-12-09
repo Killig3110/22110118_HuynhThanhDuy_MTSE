@@ -13,6 +13,7 @@ const floorRoutes = require('./routes/floor.routes');
 const apartmentRoutes = require('./routes/apartment.routes');
 const searchRoutes = require('./routes/search.routes');
 const leaseRoutes = require('./routes/lease.routes');
+const cartRoutes = require('./routes/cart.routes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/validation');
@@ -31,7 +32,8 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'"],
             scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:", "https:"],
-            connectSrc: ["'self'"],
+            // allow API requests from frontend during dev
+            connectSrc: ["'self'", process.env.CLIENT_URL || 'http://localhost:3000', 'http://localhost:5001'],
             fontSrc: ["'self'", "https:", "data:"],
             objectSrc: ["'none'"],
             mediaSrc: ["'self'"],
@@ -51,14 +53,20 @@ app.use(helmet({
 app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:3000',
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
+}));
+app.options('*', cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization']
 }));
 
 // Static files CORS middleware - PHẢI đặt trước express.static
 app.use('/uploads', (req, res, next) => {
     res.header('Access-Control-Allow-Origin', process.env.CLIENT_URL || 'http://localhost:3000');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
     res.header('Access-Control-Allow-Credentials', true);
 
@@ -89,15 +97,37 @@ app.use('/api/floors', floorRoutes);
 app.use('/api/apartments', apartmentRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/leases', leaseRoutes);
+app.use('/api/cart', cartRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-    res.json({
+// Health check with database connection test
+app.get('/api/health', async (req, res) => {
+    const health = {
         status: 'OK',
         message: 'Building Management System API is running',
         timestamp: new Date().toISOString(),
-        version: '1.0.0'
-    });
+        version: '1.0.0',
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+    };
+
+    // Test database connection
+    try {
+        await sequelize.authenticate();
+        health.database = {
+            status: 'connected',
+            type: 'MySQL',
+            host: sequelize.config.host
+        };
+    } catch (error) {
+        health.status = 'DEGRADED';
+        health.database = {
+            status: 'disconnected',
+            error: error.message
+        };
+        return res.status(503).json(health);
+    }
+
+    res.json(health);
 });
 
 // API Documentation endpoint
@@ -157,24 +187,71 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
+let server;
+
 // Database connection and server start
 sequelize.authenticate()
     .then(() => {
-        console.log('Database connected successfully');
+        console.log('✅ Database connected successfully');
 
         // Sync models
         return sequelize.sync({ force: false });
     })
     .then(() => {
-        console.log('Database models synchronized');
+        console.log('✅ Database models synchronized');
 
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+        server = app.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
         });
     })
     .catch((error) => {
-        console.error('Unable to start server:', error);
+        console.error('❌ Unable to start server:', error);
         process.exit(1);
     });
+
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+    console.log(`\n⚠️  ${signal} signal received: closing HTTP server`);
+
+    if (server) {
+        server.close(async () => {
+            console.log('🔒 HTTP server closed');
+
+            try {
+                await sequelize.close();
+                console.log('🔒 Database connection closed');
+                console.log('✅ Graceful shutdown completed');
+                process.exit(0);
+            } catch (error) {
+                console.error('❌ Error during shutdown:', error);
+                process.exit(1);
+            }
+        });
+
+        // Force close after 10 seconds
+        setTimeout(() => {
+            console.error('⏰ Forced shutdown after timeout');
+            process.exit(1);
+        }, 10000);
+    }
+};
+
+// Listen for termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('UNHANDLED_REJECTION');
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
 
 module.exports = app;
