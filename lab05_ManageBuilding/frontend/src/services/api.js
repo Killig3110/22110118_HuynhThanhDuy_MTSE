@@ -190,9 +190,9 @@ export const reviewAPI = {
     create: (apartmentId, data) => api.post(`/apartments/${apartmentId}/reviews`, data),
     update: (reviewId, data) => api.put(`/reviews/${reviewId}`, data),
     delete: (reviewId) => api.delete(`/reviews/${reviewId}`),
-    getByApartment: (apartmentId, page = 1, limit = 10) => 
+    getByApartment: (apartmentId, page = 1, limit = 10) =>
         api.get(`/apartments/${apartmentId}/reviews`, { params: { page, limit } }),
-    getMyReviews: (page = 1, limit = 10) => 
+    getMyReviews: (page = 1, limit = 10) =>
         api.get('/my-reviews', { params: { page, limit } }),
 };
 

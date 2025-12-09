@@ -1,11 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { apartmentAPI, leaseAPI } from '../../services/api';
+import { apartmentAPI, leaseAPI, favoriteAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
 import AddToCartModal from '../../components/cart/AddToCartModal';
 import GuestLeaseRequestModal from '../../components/leases/GuestLeaseRequestModal';
+import FavoriteButton from '../../components/FavoriteButton';
+import ApartmentStats from '../../components/ApartmentStats';
+import ReviewForm from '../../components/ReviewForm';
+import ReviewList from '../../components/ReviewList';
+import SimilarApartments from '../../components/SimilarApartments';
 import {
     Home, MapPin, Maximize, Bed, Bath, Car, Calendar,
     DollarSign, CheckCircle, XCircle, Heart, Share2,
@@ -25,10 +30,17 @@ const ApartmentDetailPage = () => {
     const [addToCartModalOpen, setAddToCartModalOpen] = useState(false);
     const [guestRequestModalOpen, setGuestRequestModalOpen] = useState(false);
     const [isFavorite, setIsFavorite] = useState(false);
+    const [stats, setStats] = useState(null);
+    const [canReview, setCanReview] = useState(false);
+    const [reviewsKey, setReviewsKey] = useState(0);
 
     useEffect(() => {
         loadApartment();
-    }, [id]);
+        trackView();
+        checkFavoriteStatus();
+        loadStats();
+        checkReviewEligibility();
+    }, [id, user]);
 
     const loadApartment = async () => {
         try {
@@ -41,6 +53,45 @@ const ApartmentDetailPage = () => {
             toast.error('Failed to load apartment');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const trackView = async () => {
+        try {
+            await apartmentAPI.trackView(id);
+            // Refresh stats after tracking view
+            setTimeout(() => {
+                loadStats();
+            }, 500);
+        } catch (error) {
+            console.error('Error tracking view:', error);
+        }
+    };
+
+    const checkFavoriteStatus = async () => {
+        if (!user) return;
+        try {
+            const response = await favoriteAPI.check(id);
+            setIsFavorite(response.data.isFavorite);
+        } catch (error) {
+            console.error('Error checking favorite:', error);
+        }
+    };
+
+    const loadStats = async () => {
+        try {
+            const response = await apartmentAPI.getStats(id);
+            setStats(response.data.data);
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    };
+
+    const checkReviewEligibility = async () => {
+        // Only authenticated users who are tenants/owners can review
+        // This will be validated by backend, but we can add UI hint
+        if (user) {
+            setCanReview(true); // Backend will do actual validation
         }
     };
 
@@ -80,9 +131,13 @@ const ApartmentDetailPage = () => {
         }
     };
 
-    const toggleFavorite = () => {
-        setIsFavorite(!isFavorite);
-        toast.success(isFavorite ? 'Removed from favorites' : 'Added to favorites');
+    const handleToggleFavorite = (newFavoriteState) => {
+        setIsFavorite(newFavoriteState);
+    };
+
+    const handleReviewSubmitted = () => {
+        loadStats(); // Refresh stats after new review
+        setReviewsKey(prev => prev + 1); // Force ReviewList to re-fetch
     };
 
     if (loading) {
@@ -209,12 +264,12 @@ const ApartmentDetailPage = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-2">
-                                    <button
-                                        onClick={toggleFavorite}
-                                        className="p-2 rounded-full hover:bg-gray-100"
-                                    >
-                                        <Heart className={`h-6 w-6 ${isFavorite ? 'fill-red-500 text-red-500' : 'text-gray-400'}`} />
-                                    </button>
+                                    <FavoriteButton
+                                        apartmentId={id}
+                                        initialFavorite={isFavorite}
+                                        onToggle={handleToggleFavorite}
+                                        size="lg"
+                                    />
                                     <button
                                         onClick={handleShare}
                                         className="p-2 rounded-full hover:bg-gray-100"
@@ -223,6 +278,9 @@ const ApartmentDetailPage = () => {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* Apartment Stats */}
+                            {stats && <ApartmentStats stats={stats} />}
 
                             {/* Status Badge */}
                             <div className="flex items-center space-x-2 mb-6">
@@ -324,6 +382,17 @@ const ApartmentDetailPage = () => {
                                 </p>
                             </div>
                         </div>
+
+                        {/* Reviews Section */}
+                        <div className="space-y-6">
+                            {canReview && user && (
+                                <ReviewForm
+                                    apartmentId={id}
+                                    onReviewSubmitted={handleReviewSubmitted}
+                                />
+                            )}
+                            <ReviewList key={reviewsKey} apartmentId={id} />
+                        </div>
                     </div>
 
                     {/* Right Column - Pricing & Actions */}
@@ -423,6 +492,11 @@ const ApartmentDetailPage = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* Similar Apartments */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+                <SimilarApartments apartmentId={id} currentType={apartment?.type} />
             </div>
 
             {/* Modals */}

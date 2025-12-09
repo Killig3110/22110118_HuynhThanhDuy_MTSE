@@ -33,6 +33,7 @@ import FloorManager from './pages/admin/FloorManager';
 import ApartmentManager from './pages/admin/ApartmentManager';
 import UserManager from './pages/admin/UserManager';
 import Residents from './pages/residents/Residents';
+import FavoritesPage from './pages/FavoritesPage';
 
 const managementRoles = ['admin', 'building_manager', 'security', 'technician', 'accountant'];
 
@@ -228,6 +229,16 @@ function App() {
                                 <Route
                                     path="/apartments/:id"
                                     element={<ApartmentDetailPage />}
+                                />
+
+                                {/* Favorites - Protected */}
+                                <Route
+                                    path="/favorites"
+                                    element={
+                                        <ProtectedRoute>
+                                            <FavoritesPage />
+                                        </ProtectedRoute>
+                                    }
                                 />
 
                                 <Route

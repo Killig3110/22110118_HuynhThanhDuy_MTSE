@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
 import { searchAPI } from '../services/api';
 import {
@@ -28,6 +29,7 @@ const emptyResults = {
 };
 
 const SearchPage = () => {
+    const navigate = useNavigate();
     const [query, setQuery] = useState('');
     const [selectedTypes, setSelectedTypes] = useState(TYPE_OPTIONS.map((o) => o.key));
     const [results, setResults] = useState(emptyResults);
@@ -173,7 +175,7 @@ const SearchPage = () => {
                                 {apt.type} • {apt.area} m² • {apt.status}
                             </p>
                         </div>
-                    ))}
+                    ), apt => navigate(`/apartments/${apt.id}`))}
 
                     {renderSection('Residents', results.residents, (resident) => (
                         <div>
@@ -196,7 +198,7 @@ const SearchPage = () => {
     );
 };
 
-const renderSection = (title, items = [], renderItem) => {
+const renderSection = (title, items = [], renderItem, onItemClick = null) => {
     if (!items || items.length === 0) {
         return (
             <div className="border border-dashed border-gray-200 rounded-lg p-4 text-sm text-gray-400">
@@ -215,7 +217,9 @@ const renderSection = (title, items = [], renderItem) => {
                 {items.map((item) => (
                     <div
                         key={`${title}-${item.id}`}
-                        className="border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors"
+                        onClick={() => onItemClick && onItemClick(item)}
+                        className={`border border-gray-200 rounded-lg p-3 hover:border-blue-400 transition-colors ${onItemClick ? 'cursor-pointer hover:shadow-md' : ''
+                            }`}
                     >
                         {renderItem(item)}
                     </div>

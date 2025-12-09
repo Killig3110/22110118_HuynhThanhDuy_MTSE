@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
-import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin, Search, ClipboardList, ShoppingBag, HomeIcon, ShoppingCart } from 'lucide-react';
+import { Menu, LogOut, User, Users, UserPlus, Home, Bell, Building2, MapPin, Search, ClipboardList, ShoppingBag, HomeIcon, ShoppingCart, Heart } from 'lucide-react';
 
 const Navbar = () => {
     const { user, logout } = useAuth();
@@ -23,6 +23,7 @@ const Navbar = () => {
         links.push({ to: '/buildings', label: 'Buildings', icon: Building2, show: ['admin', 'building_manager', 'security', 'technician', 'accountant'].includes(role) });
         links.push({ to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true });
         links.push({ to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true });
+        links.push({ to: '/favorites', label: 'Yêu thích', icon: Heart, show: true });
         links.push({ to: '/search', label: 'Search', icon: Search, show: ['admin', 'building_manager', 'resident'].includes(role) });
 
         if (role === 'resident') {

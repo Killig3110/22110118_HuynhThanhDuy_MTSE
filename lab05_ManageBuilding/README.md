@@ -105,16 +105,17 @@ curl -H "Authorization: Bearer <token>" \
 - **Payment**: Payment tracking and receipts
 - **Announcement**: Building communications
 
+### Engagement Models (New)
+- **ApartmentFavorite**: User favorites with unique constraint on [userId, apartmentId]
+- **ApartmentView**: View tracking with userId (nullable for guests), ipAddress, viewedAt, 1-hour deduplication
+- **ApartmentReview**: Ratings (1-5) and comments, unique constraint on [userId, apartmentId], tenant/owner validation
+
 ## 🎨 Frontend Features
 
 - **Modern UI**: React with Tailwind CSS
-- **Responsive Design**: Mobile-first approach
-- **Form Validation**: Client-side validation with error handling
-- **Lazy Loading**: Infinite scroll for large data sets
-- **Role-based UI**: Different interfaces for different user roles
-
 ## 📱 Key Features
 
+### Core Management
 - **Building Structure Management**: Buildings → Blocks → Floors → Apartments
 - **Resident Management**: Apartment assignments and household members
 - **Visitor Management**: Registration, approval, and tracking
@@ -122,7 +123,61 @@ curl -H "Authorization: Bearer <token>" \
 - **Billing & Payments**: Comprehensive financial management
 - **Announcements**: Building-wide communication system
 
-## 🆕 Enhanced Features (Latest Update)
+### User Engagement
+- **Favorites System**: Save and manage favorite apartments
+- **Reviews & Ratings**: Rate and review apartments (tenant/owner only)
+- **View Tracking**: Track apartment views, show recently viewed
+- **Statistics Dashboard**: Real-time engagement metrics per apartment
+- **Similar Apartments**: Smart recommendation algorithm
+- **Guest Access**: Browse marketplace without authentication → Floors → Apartments
+- **Resident Management**: Apartment assignments and household members
+- **Visitor Management**: Registration, approval, and tracking
+- **Facility Management**: Booking system for common amenities
+- **Billing & Payments**: Comprehensive financial management
+- **Announcements**: Building-wide communication system
+
+## 🆕 Enhanced Features (Latest Updates)
+
+### Engagement Features (Favorites, Reviews, Views, Stats)
+
+#### 1. Favorites System ❤️
+- **Add/Remove Favorites**: Toggle heart icon on apartment cards
+- **Favorites Page**: Dedicated page at `/favorites` showing all saved apartments
+- **Optimistic UI**: Instant visual feedback before server response
+- **Persistence**: Favorites synced across devices and sessions
+- **Authentication Required**: Must login to favorite apartments
+
+#### 2. Reviews & Ratings ⭐
+- **Write Reviews**: Tenants/owners can rate and review their apartments (1-5 stars)
+- **Edit/Delete**: Users can update or remove their own reviews
+- **Display Reviews**: Public review list with user info, ratings, comments, and dates
+- **Average Rating**: Calculated from all reviews for each apartment
+- **Validation**: Only active tenants/owners can review, one review per apartment
+- **Pagination**: Review list supports pagination for apartments with many reviews
+
+#### 3. View Tracking 👁️
+- **Auto-Track Views**: Every apartment visit automatically tracked
+- **Guest Support**: Anonymous view tracking via IP address
+- **Deduplication**: Prevents duplicate views within 1-hour window
+- **Recently Viewed**: Authenticated users see "Đã xem gần đây" section on marketplace
+- **Horizontal Scroll**: Shows up to 10 recently viewed apartments with quick navigation
+
+#### 4. Apartment Statistics 📊
+Four real-time metrics displayed on each apartment:
+- **Buyers Count**: Number of people who rented/bought this apartment
+- **Reviews**: Average rating (e.g., 4.5★) with total review count
+- **Views**: Total view count (formatted as "1.2k" for large numbers)
+- **Favorites**: How many users favorited this apartment
+
+#### 5. Similar Apartments 🏘️
+- **Smart Algorithm**: Finds apartments with:
+  - Same type OR same number of bedrooms
+  - Area within ±20% range
+  - Price within ±30% range
+  - Same building prioritized
+- **Limit 6**: Shows up to 6 most similar apartments
+- **Navigation**: Click any similar apartment to view its details
+- **Dynamic**: Similar apartments recalculate for each apartment viewed
 
 ### Guest Access System
 - **Public Marketplace**: Browse apartments without authentication
@@ -160,16 +215,31 @@ curl -H "Authorization: Bearer <token>" \
 - Full apartment information (size, bedrooms, bathrooms, amenities)
 - Pricing details (rent/sale price, deposit, maintenance fee)
 - Location information (block, building, floor)
+- **FavoriteButton**: Heart icon in header (add/remove from favorites)
+- **ApartmentStats**: 4 badges showing buyers, reviews, views, favorites
+- **ReviewForm**: Star rating (1-5) + comment textarea (tenants/owners only)
+- **ReviewList**: Paginated reviews with edit/delete buttons for own reviews
+- **SimilarApartments**: Grid of 6 similar apartments at page bottom
+- **Auto-Track View**: View automatically recorded on page load
 - "Add to Cart" button (authenticated users)
 - "Request Lease" button (all users, opens modal for guests)
-- Share and favorite functionality
+- Share functionality
 
 **Marketplace Enhancements**
 - Sort by: Newest, Price (Low to High), Price (High to Low)
 - Filter by: For Rent, For Sale, All
 - Quick "View" button → Detail page
+- **FavoriteButton**: Heart icon on each apartment card (top-right corner)
+- **Recently Viewed Section**: Shows last 10 viewed apartments (authenticated users only)
 - "Add to Cart" buttons for authenticated users (Rent/Buy)
 - Responsive grid layout
+
+**Favorites Page** (`/favorites`)
+- Grid layout showing all favorited apartments
+- Pagination for large lists (20 items per page)
+- Empty state with CTA button to marketplace
+- Quick remove favorites with heart button
+- Click card to view apartment details
 
 **Cart Integration**
 - Cart icon in Navbar (hidden for guests)
@@ -194,15 +264,6 @@ curl -H "Authorization: Bearer <token>" \
 
 **Notifications** (Console Logs)
 - Guest request submissions: `🔔 NEW GUEST LEASE REQUEST`
-- User role upgrades: `✨ USER ROLE UPGRADED`
-- Checkout success: `✅ Checkout Success`
-
-**Error Boundaries**
-- React ErrorBoundary component wraps entire app
-- User-friendly error UI with retry/home buttons
-- Development mode shows error details and stack trace
-- Automatic reload after multiple errors
-
 ### API Endpoints
 
 **Cart Operations**
@@ -218,7 +279,75 @@ curl -H "Authorization: Bearer <token>" \
 - `GET /apartments/:id` - Public endpoint (uses `optionalAuth`)
 - Returns full apartment details for detail page
 
----
+**Favorites** (All require authentication)
+- `POST /api/favorites/:apartmentId` - Add apartment to favorites
+- `DELETE /api/favorites/:apartmentId` - Remove from favorites
+- `GET /api/favorites` - Get all user's favorites (paginated)
+- `GET /api/favorites/check/:apartmentId` - Check if apartment is favorited
+
+**Reviews** (Create/Update/Delete require authentication)
+- `POST /api/apartments/:id/reviews` - Create review (tenant/owner only, rating 1-5, comment min 10 chars)
+- `PUT /api/reviews/:id` - Update own review
+- `DELETE /api/reviews/:id` - Delete own review
+- `GET /api/apartments/:id/reviews` - Get apartment reviews (public, paginated)
+## 🧪 Testing Guide
+
+### Quick Test (10 minutes) - See `QUICK_TEST_GUIDE.md`
+
+### Test Engagement Features
+
+#### Test Favorites
+1. Login as user
+2. Go to `/marketplace`
+3. Click heart icon on 3 apartments → Hearts turn red
+4. Go to `/favorites` → See 3 apartments in grid
+5. Click heart on one → Should remove from list
+
+#### Test Reviews (Tenant/Owner Only)
+1. Login as `resident@building.com / resident123`
+2. Go to any apartment detail page
+3. See ReviewForm → Click 5 stars → Type comment (min 10 chars)
+4. Submit → Toast success → Review appears in list
+5. Click edit icon → Change to 4 stars → Save
+6. Click delete icon → Confirm → Review removed
+
+#### Test View Tracking
+1. Visit 3 different apartments
+2. Go to `/marketplace`
+3. See "Đã xem gần đây" section with 3 apartments (most recent first)
+4. Visit same apartment again within 1 hour → View count doesn't duplicate
+
+#### Test Stats & Similar
+1. Go to any apartment detail
+2. See 4 stat badges at top (buyers, reviews, views, favorites)
+3. Scroll to bottom → See "Căn hộ tương tự" with up to 6 apartments
+4. Click any similar apartment → Navigates to new apartment detail
+
+### Test Guest Flow
+1. Open `/marketplace` without logging in
+2. Click "View" on an apartment → See detail page
+3. Click heart icon → Redirects to `/login`
+4. No "Đã xem gần đây" section (guest views tracked by IP only)
+3. Click "Request Lease" → Fill guest modal → Submit
+4. Check backend console for guest request log
+
+### Test User Cart Flow
+1. Login as any user (not staff)
+2. Go to `/marketplace`
+3. Click "Rent" or "Buy" → Item added to cart
+4. Go to `/cart` → Select items → Checkout
+5. Check "My Requests" page for lease requests
+
+### Test Role Upgrade
+1. Login as admin/building_manager
+2. Go to "Lease Requests" page
+3. Approve a guest request → Check console for role upgrade log
+4. Guest receives temp password and resident role
+
+### Full Testing Guide
+- **Quick Test**: See `QUICK_TEST_GUIDE.md` for 10-step checklist
+- **Detailed Test**: See `TEST_ENGAGEMENT_FEATURES.md` for comprehensive scenarios
+- **API Testing**: Use Postman collection or curl commands in test guides
 
 ## 🧪 Testing Guide
 
@@ -227,11 +356,49 @@ curl -H "Authorization: Bearer <token>" \
 2. Click "View" on an apartment → See detail page
 3. Click "Request Lease" → Fill guest modal → Submit
 4. Check backend console for guest request log
+---
 
-### Test User Cart Flow
-1. Login as any user (not staff)
-2. Go to `/marketplace`
-3. Click "Rent" or "Buy" → Item added to cart
+## 📚 Documentation Files
+
+- **README.md**: This file - project overview and features
+- **DATABASE_RELATIONSHIPS.md**: Detailed database schema and relationships
+- **IMPLEMENTATION_SUMMARY.md**: Cart and checkout implementation details
+- **BUG_FIXES_DEC_9.md**: Documented bug fixes and solutions
+- **TEST_LEASE_WORKFLOW.md**: Lease request workflow testing guide
+- **TEST_ENGAGEMENT_FEATURES.md**: Comprehensive engagement features testing guide
+- **QUICK_TEST_GUIDE.md**: 10-minute quick test checklist
+
+---
+
+## 🎯 Feature Completeness
+
+### ✅ Lab Requirements Met
+- [x] Form Validation (express-validator + React Hook Form)
+- [x] Lazy Loading / Pagination (infinite scroll + paginated lists)
+- [x] Rate Limiting (express-rate-limit)
+- [x] Authentication (JWT)
+- [x] Authorization (Role-based middleware)
+- [x] Input Validation (express-validator)
+
+### ✅ Additional Features Implemented
+- [x] Guest access and lease requests
+- [x] Cart system with checkout
+- [x] Interactive 3D building map
+- [x] Fuzzy search with filters
+- [x] GraphQL integration (cart operations)
+- [x] Error boundaries and handling
+- [x] **Favorites system** 
+- [x] **Reviews and ratings**
+- [x] **View tracking**
+- [x] **Apartment statistics**
+- [x] **Similar apartments algorithm**
+- [x] **Recently viewed section**
+
+---
+
+**Lab05 Building Management System** - HCMUTE MTSE Course  
+Student ID: 22110118 - Huỳnh Thành Duy  
+Latest Update: Engagement Features (Favorites, Reviews, Views, Stats, Similar Apartments)
 4. Go to `/cart` → Select items → Checkout
 5. Check "My Requests" page for lease requests
 

@@ -27,7 +27,7 @@ const FavoriteButton = ({ apartmentId, initialFavorite = false, onToggle, size =
         }
 
         setLoading(true);
-        
+
         // Optimistic UI update
         const previousState = isFavorite;
         setIsFavorite(!isFavorite);
@@ -40,7 +40,7 @@ const FavoriteButton = ({ apartmentId, initialFavorite = false, onToggle, size =
                 await api.post(`/favorites/${apartmentId}`);
                 toast.success('Đã thêm vào danh sách yêu thích');
             }
-            
+
             // Notify parent component
             if (onToggle) {
                 onToggle(!isFavorite);
@@ -50,7 +50,7 @@ const FavoriteButton = ({ apartmentId, initialFavorite = false, onToggle, size =
             setIsFavorite(previousState);
             console.error('Error toggling favorite:', error);
             toast.error(
-                error.response?.data?.message || 
+                error.response?.data?.message ||
                 'Không thể cập nhật yêu thích. Vui lòng thử lại.'
             );
         } finally {
@@ -78,11 +78,11 @@ const FavoriteButton = ({ apartmentId, initialFavorite = false, onToggle, size =
             aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
         >
             {isFavorite ? (
-                <HeartIconSolid 
+                <HeartIconSolid
                     className={`${sizeClasses[size]} text-red-500`}
                 />
             ) : (
-                <HeartIcon 
+                <HeartIcon
                     className={`${sizeClasses[size]} text-gray-600 hover:text-red-500`}
                 />
             )}
