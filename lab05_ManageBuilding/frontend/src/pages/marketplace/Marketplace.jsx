@@ -180,95 +180,110 @@ const Marketplace = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sortedListings.map((apt) => (
-                    <div key={apt.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex items-center justify-between mb-2">
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-900">#{apt.apartmentNumber}</h3>
-                                <p className="text-xs text-gray-500">
-                                    {apt.floor?.building?.buildingCode} • Floor {apt.floor?.floorNumber}
-                                </p>
-                            </div>
-                            <div className="flex gap-2 text-xs">
-                                {apt.isListedForRent && <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">Rent</span>}
-                                {apt.isListedForSale && <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Sale</span>}
-                            </div>
-                        </div>
+                {sortedListings.map((apt) => {
+                    // Check if apartment is actually available for rent/buy
+                    const isAvailable = apt.status === 'vacant' && apt.isActive;
+                    const canRent = isAvailable && apt.isListedForRent;
+                    const canBuy = isAvailable && apt.isListedForSale;
 
-                        <div className="text-sm text-gray-600 mt-2">
-                            {apt.type} • {apt.area} m² • {apt.bedrooms} BR / {apt.bathrooms} BA
-                        </div>
-
-                        <div className="mt-2 text-sm font-semibold text-gray-800">
-                            {apt.isListedForRent && (
-                                <div>Rent: {Number(apt.monthlyRent).toLocaleString()}₫/month</div>
-                            )}
-                            {apt.isListedForSale && (
-                                <div>Sale: {Number(apt.salePrice).toLocaleString()}₫</div>
-                            )}
-                        </div>
-
-                        <div className="mt-4 flex flex-col gap-2">
-                            <button
-                                onClick={() => navigate(`/apartments/${apt.id}`)}
-                                className="w-full px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 flex items-center justify-center gap-1"
-                            >
-                                <Eye className="h-4 w-4" />
-                                View Details
-                            </button>
-
-                            {/* Guest/User: Show request buttons */}
-                            {(!user || user.role?.name === 'user') && (
-                                <div className="flex gap-2">
-                                    {apt.isListedForRent && (
-                                        <button
-                                            onClick={() => openContactModal(apt, 'rent')}
-                                            className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center justify-center gap-1"
-                                            title="Request to Rent"
-                                        >
-                                            Request Rent
-                                        </button>
-                                    )}
-                                    {apt.isListedForSale && (
-                                        <button
-                                            onClick={() => openContactModal(apt, 'buy')}
-                                            className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 flex items-center justify-center gap-1"
-                                            title="Request to Buy"
-                                        >
-                                            Request Buy
-                                        </button>
-                                    )}
+                    return (
+                        <div key={apt.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex items-center justify-between mb-2">
+                                <div>
+                                    <h3 className="text-lg font-semibold text-gray-900">#{apt.apartmentNumber}</h3>
+                                    <p className="text-xs text-gray-500">
+                                        {apt.floor?.building?.buildingCode} • Floor {apt.floor?.floorNumber}
+                                    </p>
                                 </div>
-                            )}
-
-                            {/* Logged-in User: Show add to cart buttons */}
-                            {user && user.role?.name === 'user' && (
-                                <div className="flex gap-2">
-                                    {apt.isListedForRent && (
-                                        <button
-                                            onClick={() => handleAddToCart(apt, 'rent')}
-                                            className="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 flex items-center justify-center gap-1"
-                                            title="Add to Cart (Rent)"
-                                        >
-                                            <ShoppingCart className="h-4 w-4" />
-                                            Cart (Rent)
-                                        </button>
-                                    )}
-                                    {apt.isListedForSale && (
-                                        <button
-                                            onClick={() => handleAddToCart(apt, 'buy')}
-                                            className="flex-1 px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 flex items-center justify-center gap-1"
-                                            title="Add to Cart (Buy)"
-                                        >
-                                            <ShoppingCart className="h-4 w-4" />
-                                            Cart (Buy)
-                                        </button>
-                                    )}
+                                <div className="flex gap-2 text-xs">
+                                    {apt.isListedForRent && <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded">Rent</span>}
+                                    {apt.isListedForSale && <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded">Sale</span>}
+                                    {!isAvailable && <span className="px-2 py-1 bg-red-100 text-red-700 rounded">Not Available</span>}
                                 </div>
-                            )}
+                            </div>
+
+                            <div className="text-sm text-gray-600 mt-2">
+                                {apt.type} • {apt.area} m² • {apt.bedrooms} BR / {apt.bathrooms} BA
+                            </div>
+
+                            <div className="mt-2 text-sm font-semibold text-gray-800">
+                                {apt.isListedForRent && (
+                                    <div>Rent: {Number(apt.monthlyRent).toLocaleString()}₫/month</div>
+                                )}
+                                {apt.isListedForSale && (
+                                    <div>Sale: {Number(apt.salePrice).toLocaleString()}₫</div>
+                                )}
+                            </div>
+
+                            <div className="mt-4 flex flex-col gap-2">
+                                <button
+                                    onClick={() => navigate(`/apartments/${apt.id}`)}
+                                    className="w-full px-3 py-2 bg-gray-100 text-gray-700 text-sm rounded hover:bg-gray-200 flex items-center justify-center gap-1"
+                                >
+                                    <Eye className="h-4 w-4" />
+                                    View Details
+                                </button>
+
+                                {/* Show availability message if not available */}
+                                {!isAvailable && (
+                                    <div className="bg-red-50 border border-red-200 rounded p-2 text-xs text-red-700">
+                                        This apartment is currently not available
+                                    </div>
+                                )}
+
+                                {/* Guest/User: Show request buttons ONLY if available */}
+                                {isAvailable && (!user || user.role?.name === 'user') && (
+                                    <div className="flex gap-2">
+                                        {canRent && (
+                                            <button
+                                                onClick={() => openContactModal(apt, 'rent')}
+                                                className="flex-1 px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 flex items-center justify-center gap-1"
+                                                title="Request to Rent"
+                                            >
+                                                Request Rent
+                                            </button>
+                                        )}
+                                        {canBuy && (
+                                            <button
+                                                onClick={() => openContactModal(apt, 'buy')}
+                                                className="flex-1 px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 flex items-center justify-center gap-1"
+                                                title="Request to Buy"
+                                            >
+                                                Request Buy
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                                {/* Logged-in User: Show add to cart buttons ONLY if available */}
+                                {isAvailable && user && user.role?.name === 'user' && (
+                                    <div className="flex gap-2">
+                                        {canRent && (
+                                            <button
+                                                onClick={() => handleAddToCart(apt, 'rent')}
+                                                className="flex-1 px-3 py-2 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 flex items-center justify-center gap-1"
+                                                title="Add to Cart (Rent)"
+                                            >
+                                                <ShoppingCart className="h-4 w-4" />
+                                                Cart (Rent)
+                                            </button>
+                                        )}
+                                        {canBuy && (
+                                            <button
+                                                onClick={() => handleAddToCart(apt, 'buy')}
+                                                className="flex-1 px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 flex items-center justify-center gap-1"
+                                                title="Add to Cart (Buy)"
+                                            >
+                                                <ShoppingCart className="h-4 w-4" />
+                                                Cart (Buy)
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
                         </div>
-                    </div>
-                ))}
+                    );
+                })}
             </div>
 
             {loading && (
