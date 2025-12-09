@@ -22,6 +22,7 @@ import LeaseRequests from './pages/leases/LeaseRequests';
 import Marketplace from './pages/marketplace/Marketplace';
 import MyRequests from './pages/leases/MyRequests';
 import MyApartments from './pages/apartments/MyApartments';
+import ApartmentDetailPage from './pages/apartments/ApartmentDetailPage';
 import CartPage from './pages/cart/CartPage';
 import CartManagement from './pages/cart/CartManagement';
 import CheckoutPage from './pages/checkout/CheckoutPage';
@@ -214,6 +215,13 @@ function App() {
                                 path="/marketplace"
                                 element={<Marketplace />}
                             />
+                            
+                            {/* Apartment Detail - Public Access */}
+                            <Route
+                                path="/apartments/:id"
+                                element={<ApartmentDetailPage />}
+                            />
+                            
                             <Route
                                 path="/cart"
                                 element={

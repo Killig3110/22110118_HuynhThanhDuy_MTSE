@@ -13,7 +13,7 @@ const errorHandler = (err, req, res, next) => {
         errorMessage: err.message,
         stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
     };
-    
+
     console.error('❌ Error occurred:', JSON.stringify(errorLog, null, 2));
 
     let statusCode = err.statusCode || 500;

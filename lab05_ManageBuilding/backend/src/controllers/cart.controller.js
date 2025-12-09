@@ -234,6 +234,96 @@ class CartController {
             });
         }
     }
+
+    /**
+     * Checkout cart - Create lease requests for all selected items
+     * POST /api/cart/checkout
+     */
+    async checkout(req, res) {
+        const sequelize = require('../config/database');
+        const { LeaseRequest, Apartment, CartItem } = require('../models');
+        
+        const transaction = await sequelize.transaction();
+        
+        try {
+            const userId = req.user.id;
+            
+            // Get all selected cart items
+            const cartItems = await CartItem.findAll({
+                where: { 
+                    userId,
+                    selected: true 
+                },
+                include: [{
+                    model: Apartment,
+                    as: 'apartment'
+                }],
+                transaction
+            });
+
+            if (cartItems.length === 0) {
+                await transaction.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'No items selected for checkout'
+                });
+            }
+
+            // Check apartment availability
+            for (const item of cartItems) {
+                if (item.apartment.status !== 'available') {
+                    await transaction.rollback();
+                    return res.status(400).json({
+                        success: false,
+                        message: `Apartment ${item.apartment.apartmentNumber} is not available`
+                    });
+                }
+            }
+
+            // Create lease requests for each item
+            const leaseRequests = [];
+            for (const item of cartItems) {
+                const leaseRequest = await LeaseRequest.create({
+                    userId,
+                    apartmentId: item.apartmentId,
+                    type: item.mode,
+                    duration: item.months,
+                    note: item.note,
+                    status: 'pending_owner'
+                }, { transaction });
+
+                leaseRequests.push(leaseRequest);
+            }
+
+            // Clear selected cart items
+            await CartItem.destroy({
+                where: {
+                    userId,
+                    selected: true
+                },
+                transaction
+            });
+
+            await transaction.commit();
+
+            res.status(201).json({
+                success: true,
+                message: `Successfully created ${leaseRequests.length} lease request(s)`,
+                data: {
+                    count: leaseRequests.length,
+                    requests: leaseRequests
+                }
+            });
+
+        } catch (error) {
+            await transaction.rollback();
+            console.error('Checkout error:', error);
+            res.status(500).json({
+                success: false,
+                message: error.message
+            });
+        }
+    }
 }
 
 module.exports = new CartController();

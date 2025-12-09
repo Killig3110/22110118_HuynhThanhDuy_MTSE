@@ -214,11 +214,11 @@ sequelize.authenticate()
 // Graceful shutdown handler
 const gracefulShutdown = async (signal) => {
     console.log(`\n⚠️  ${signal} signal received: closing HTTP server`);
-    
+
     if (server) {
         server.close(async () => {
             console.log('🔒 HTTP server closed');
-            
+
             try {
                 await sequelize.close();
                 console.log('🔒 Database connection closed');

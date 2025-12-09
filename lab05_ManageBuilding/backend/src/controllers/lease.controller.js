@@ -185,7 +185,7 @@ const listLeaseRequests = async (req, res) => {
 const decideLeaseRequest = async (req, res) => {
     const { sequelize } = require('../models');
     const transaction = await sequelize.transaction();
-    
+
     try {
         const { id } = req.params;
         const { decision } = req.body; // 'approve' | 'reject'
@@ -199,12 +199,12 @@ const decideLeaseRequest = async (req, res) => {
             include: [{ model: Apartment, as: 'apartment' }],
             transaction
         });
-        
+
         if (!lease) {
             await transaction.rollback();
             return res.status(404).json({ success: false, message: 'Lease request not found' });
         }
-        
+
         if (lease.status !== 'pending_manager') {
             await transaction.rollback();
             return res.status(400).json({ success: false, message: 'Request is not ready for manager decision' });
@@ -216,7 +216,7 @@ const decideLeaseRequest = async (req, res) => {
                 decisionBy: req.user.id,
                 decisionAt: new Date()
             }, { transaction });
-            
+
             await transaction.commit();
             return res.status(200).json({ success: true, message: 'Request rejected', data: lease });
         }
@@ -237,20 +237,20 @@ const decideLeaseRequest = async (req, res) => {
                 await transaction.rollback();
                 return res.status(400).json({ success: false, message: 'Missing requester info to approve' });
             }
-            const existing = await User.findOne({ 
+            const existing = await User.findOne({
                 where: { email: lease.contactEmail },
-                transaction 
+                transaction
             });
-            
+
             if (existing) {
                 requesterId = existing.id;
             } else {
                 const [firstName = '', lastName = ''] = (lease.contactName || 'Guest User').split(' ');
-                const residentRole = await Role.findOne({ 
+                const residentRole = await Role.findOne({
                     where: { name: 'resident' },
-                    transaction 
+                    transaction
                 });
-                
+
                 const newUser = await User.create({
                     firstName: firstName || 'Guest',
                     lastName: lastName || 'User',
@@ -261,24 +261,24 @@ const decideLeaseRequest = async (req, res) => {
                     roleId: residentRole?.id || null,
                     isActive: true
                 }, { transaction });
-                
+
                 requesterId = newUser.id;
             }
         }
 
         // Upgrade role to resident if needed
         if (requesterId) {
-            const requester = await User.findByPk(requesterId, { 
+            const requester = await User.findByPk(requesterId, {
                 include: [{ model: Role, as: 'role' }],
-                transaction 
+                transaction
             });
-            
+
             if (requester && requester.role?.name !== 'resident') {
-                const residentRole = await Role.findOne({ 
+                const residentRole = await Role.findOne({
                     where: { name: 'resident' },
-                    transaction 
+                    transaction
                 });
-                
+
                 if (residentRole) {
                     await requester.update({ roleId: residentRole.id }, { transaction });
                 }

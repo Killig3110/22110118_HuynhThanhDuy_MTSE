@@ -18,4 +18,7 @@ router.delete('/', cartController.clearCart);
 router.patch('/:id/select', cartController.toggleSelection);
 router.post('/select-all', cartController.selectAll);
 
+// Checkout cart items
+router.post('/checkout', cartController.checkout);
+
 module.exports = router;
