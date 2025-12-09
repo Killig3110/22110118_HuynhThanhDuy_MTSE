@@ -7,7 +7,7 @@ const {
     cancelLeaseRequest,
     ownerDecision
 } = require('../controllers/lease.controller');
-const { authMiddleware, requireRole } = require('../middleware/auth');
+const { authMiddleware, optionalAuth, requireRole } = require('../middleware/auth');
 const { generalLimiter, adminLimiter } = require('../middleware/rateLimiter');
 const { handleValidationErrors } = require('../middleware/validation');
 
@@ -43,7 +43,7 @@ router.get('/',
 
 router.post('/',
     generalLimiter,
-    authMiddleware,
+    optionalAuth,
     validateCreate,
     createLeaseRequest
 );
