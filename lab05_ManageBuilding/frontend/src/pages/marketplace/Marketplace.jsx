@@ -4,6 +4,8 @@ import { toast } from 'react-hot-toast';
 import { searchAPI, leaseAPI, apartmentAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCart } from '../../contexts/CartContext';
+import FavoriteButton from '../../components/FavoriteButton';
+import RecentlyViewedSection from '../../components/RecentlyViewedSection';
 import { ShoppingCart, Eye, Heart } from 'lucide-react';
 
 const Marketplace = () => {
@@ -138,6 +140,9 @@ const Marketplace = () => {
 
     return (
         <div className="max-w-6xl mx-auto px-4 py-6">
+            {/* Recently Viewed Section */}
+            <RecentlyViewedSection />
+
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h1 className="text-2xl font-semibold text-gray-900">Marketplace</h1>
@@ -187,8 +192,17 @@ const Marketplace = () => {
                     const canBuy = apt.status === 'for_sale' && apt.isListedForSale;
 
                     return (
-                        <div key={apt.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
-                            <div className="flex items-center justify-between mb-2">
+                        <div key={apt.id} className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow relative">
+                            {/* Favorite Button in top right corner */}
+                            <div className="absolute top-2 right-2 z-10">
+                                <FavoriteButton
+                                    apartmentId={apt.id}
+                                    initialFavorite={false}
+                                    size="md"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-between mb-2 pr-8">
                                 <div>
                                     <h3 className="text-lg font-semibold text-gray-900">#{apt.apartmentNumber}</h3>
                                     <p className="text-xs text-gray-500">
