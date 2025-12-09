@@ -28,7 +28,7 @@ const cartResolvers = {
 
     Mutation: {
         /**
-         * Add item to cart
+         * Add item to cart (manual add - optional, mainly auto-created from lease approval)
          */
         addToCart: async (_, { input }, { user }) => {
             if (!user) {
@@ -46,7 +46,7 @@ const cartResolvers = {
         },
 
         /**
-         * Update cart item
+         * Update cart item (months, note)
          */
         updateCartItem: async (_, { id, input }, { user }) => {
             if (!user) {
@@ -100,6 +100,23 @@ const cartResolvers = {
 
             await cartService.clearCart(user.id);
             return true;
+        },
+
+        /**
+         * Checkout cart - Process payment for selected items
+         */
+        checkoutCart: async (_, { input }, { user }) => {
+            if (!user) {
+                throw new Error('Authentication required');
+            }
+
+            const { paymentMethod, note } = input;
+
+            // Use cart service checkout method
+            return await cartService.checkoutCart(user.id, {
+                paymentMethod,
+                note
+            });
         }
     },
 

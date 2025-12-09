@@ -125,7 +125,7 @@ const ApartmentDetailPage = () => {
         { name: 'Security', available: true, icon: CheckCircle }
     ];
 
-    const isAvailable = apartment.status === 'vacant' && (apartment.isListedForRent || apartment.isListedForSale);
+    const isAvailable = ['for_rent', 'for_sale'].includes(apartment.status) && (apartment.isListedForRent || apartment.isListedForSale);
 
     return (
         <div className="min-h-screen bg-gray-50">
@@ -226,11 +226,11 @@ const ApartmentDetailPage = () => {
 
                             {/* Status Badge */}
                             <div className="flex items-center space-x-2 mb-6">
-                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${apartment.status === 'vacant'
+                                <span className={`px-3 py-1 rounded-full text-sm font-medium ${['for_rent', 'for_sale'].includes(apartment.status)
                                     ? 'bg-green-100 text-green-800'
                                     : 'bg-red-100 text-red-800'
                                     }`}>
-                                    {apartment.status === 'vacant' ? 'Available' : 'Not Available'}
+                                    {['for_rent', 'for_sale'].includes(apartment.status) ? 'Available' : 'Not Available'}
                                 </span>
                                 {apartment.isListedForRent && (
                                     <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">

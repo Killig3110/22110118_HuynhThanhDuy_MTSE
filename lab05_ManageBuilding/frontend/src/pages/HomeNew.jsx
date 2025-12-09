@@ -122,9 +122,9 @@ const HomePage = () => {
                                     </Link>
                                     <Link
                                         to="/buildings/map"
-                                        className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
+                                        className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
                                     >
-                                        <MapPin className="h-6 w-6 mr-2" />
+                                        <MapPin className="h-6 w-6 mr-2 " />
                                         Explore 3D Map
                                     </Link>
                                 </>
@@ -140,7 +140,7 @@ const HomePage = () => {
                                     </Link>
                                     <Link
                                         to="/marketplace"
-                                        className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
+                                        className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-black rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
                                     >
                                         <ShoppingCart className="h-6 w-6 mr-2" />
                                         Marketplace
@@ -151,7 +151,7 @@ const HomePage = () => {
 
                         {/* Floating User Badge */}
                         {user && (
-                            <div className="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-white border border-white border-opacity-30">
+                            <div className="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 backdrop-blur-sm rounded-full text-black border border-white border-opacity-30">
                                 <div className="h-8 w-8 rounded-full bg-white bg-opacity-30 flex items-center justify-center mr-3">
                                     <span className="text-sm font-bold">{user.firstName?.charAt(0)}</span>
                                 </div>
@@ -292,7 +292,7 @@ const HomePage = () => {
                         {!user && (
                             <Link
                                 to="/login"
-                                className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-white rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
+                                className="inline-flex items-center px-8 py-4 bg-white bg-opacity-20 backdrop-blur-sm text-black rounded-full font-bold text-lg border-2 border-white hover:bg-opacity-30 transition-all"
                             >
                                 Already have an account?
                             </Link>

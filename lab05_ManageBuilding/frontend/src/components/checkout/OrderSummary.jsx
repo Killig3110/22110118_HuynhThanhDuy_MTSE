@@ -4,6 +4,9 @@ import { Home, Calendar, DollarSign } from 'lucide-react';
 const OrderSummary = ({ cartItems = [] }) => {
     const selectedItems = cartItems.filter(item => item.selected);
 
+    console.log('🛒 OrderSummary - cartItems:', cartItems);
+    console.log('✅ OrderSummary - selectedItems:', selectedItems);
+
     const calculateTotals = () => {
         let rentTotal = 0;
         let buyTotal = 0;
@@ -11,9 +14,18 @@ const OrderSummary = ({ cartItems = [] }) => {
         let maintenanceTotal = 0;
 
         selectedItems.forEach(item => {
-            const price = parseFloat(item.priceSnapshot) || 0;
-            const deposit = parseFloat(item.depositSnapshot) || 0;
-            const maintenance = parseFloat(item.maintenanceFeeSnapshot) || 0;
+            // Use correct field names from API response
+            const price = parseFloat(item.price || item.priceSnapshot) || 0;
+            const deposit = parseFloat(item.deposit || item.depositSnapshot) || 0;
+            const maintenance = parseFloat(item.maintenanceFee || item.maintenanceFeeSnapshot) || 0;
+
+            console.log(`💰 Item ${item.id}:`, {
+                price: item.price,
+                priceSnapshot: item.priceSnapshot,
+                calculated: price,
+                mode: item.mode,
+                months: item.months
+            });
 
             if (item.mode === 'rent') {
                 rentTotal += price * item.months;
@@ -64,10 +76,11 @@ const OrderSummary = ({ cartItems = [] }) => {
             <div className="p-6 border-b border-gray-200 max-h-96 overflow-y-auto">
                 <div className="space-y-4">
                     {selectedItems.map((item) => {
-                        const apartment = item.apartment || {};
-                        const floor = apartment.floor || {};
-                        const building = floor.building || {};
-                        const block = building.block || {};
+                        // Cart API returns flat fields: block, building, floor, code
+                        const apartmentCode = item.code || item.apartment?.apartmentNumber || 'N/A';
+                        const blockName = item.block || 'N/A';
+                        const buildingName = item.building || 'N/A';
+                        const floorName = item.floor || 'N/A';
 
                         return (
                             <div key={item.id} className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-0">
@@ -76,15 +89,15 @@ const OrderSummary = ({ cartItems = [] }) => {
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <h4 className="font-semibold text-gray-900">
-                                        Apartment {apartment.number}
+                                        Apartment {apartmentCode}
                                     </h4>
                                     <p className="text-sm text-gray-600">
-                                        {block.name} → {building.name} → Floor {floor.number}
+                                        {blockName} → {buildingName} → {floorName}
                                     </p>
                                     <div className="flex items-center mt-2 text-sm">
                                         <span className={`px-2 py-1 rounded text-xs font-medium ${item.mode === 'rent'
-                                                ? 'bg-blue-100 text-blue-800'
-                                                : 'bg-green-100 text-green-800'
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : 'bg-green-100 text-green-800'
                                             }`}>
                                             {item.mode === 'rent' ? 'RENT' : 'BUY'}
                                         </span>
@@ -98,7 +111,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                                 </div>
                                 <div className="flex-shrink-0 text-right">
                                     <p className="font-bold text-gray-900">
-                                        ${parseFloat(item.priceSnapshot).toLocaleString()}
+                                        {parseFloat(item.price || item.priceSnapshot || 0).toLocaleString()}đ
                                     </p>
                                     <p className="text-xs text-gray-600">
                                         {item.mode === 'rent' ? '/month' : 'total'}
@@ -116,7 +129,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Rent Total</span>
                         <span className="font-medium text-gray-900">
-                            ${totals.rentTotal.toLocaleString()}
+                            {totals.rentTotal.toLocaleString()}đ
                         </span>
                     </div>
                 )}
@@ -125,7 +138,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Purchase Total</span>
                         <span className="font-medium text-gray-900">
-                            ${totals.buyTotal.toLocaleString()}
+                            {totals.buyTotal.toLocaleString()}đ
                         </span>
                     </div>
                 )}
@@ -134,7 +147,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Security Deposit</span>
                         <span className="font-medium text-gray-900">
-                            ${totals.depositTotal.toLocaleString()}
+                            {totals.depositTotal.toLocaleString()}đ
                         </span>
                     </div>
                 )}
@@ -143,7 +156,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Maintenance Fees</span>
                         <span className="font-medium text-gray-900">
-                            ${totals.maintenanceTotal.toLocaleString()}
+                            {totals.maintenanceTotal.toLocaleString()}đ
                         </span>
                     </div>
                 )}
@@ -152,7 +165,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                     <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-medium text-gray-900">
-                            ${totals.subtotal.toLocaleString()}
+                            {totals.subtotal.toLocaleString()}đ
                         </span>
                     </div>
                 </div>
@@ -160,7 +173,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                 <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Tax (10%)</span>
                     <span className="font-medium text-gray-900">
-                        ${totals.tax.toLocaleString()}
+                        {totals.tax.toLocaleString()}đ
                     </span>
                 </div>
 
@@ -168,7 +181,7 @@ const OrderSummary = ({ cartItems = [] }) => {
                     <div className="flex justify-between">
                         <span className="text-lg font-bold text-gray-900">Total</span>
                         <span className="text-2xl font-bold text-blue-600">
-                            ${totals.total.toLocaleString()}
+                            {totals.total.toLocaleString()}đ
                         </span>
                     </div>
                 </div>

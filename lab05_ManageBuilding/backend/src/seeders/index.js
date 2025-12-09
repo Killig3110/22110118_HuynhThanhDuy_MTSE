@@ -380,34 +380,32 @@ async function seedDatabase() {
         console.log('🏠 Creating apartments for each floor...');
         const apartments = [];
         const apartmentsPerFloor = 6;
-        // More vacant apartments for rent/sale (60% vacant, 20% occupied, 20% renovation)
-        const statusOptions = [
-            'vacant', 'vacant', 'vacant', // 50% vacant
+        // More available apartments (50% for_rent, 17% for_sale, 17% occupied, 16% under_renovation)
+        const baseStatusOptions = [
+            'for_rent', 'for_rent', 'for_rent', // 50% for rent
+            'for_sale', // 16.7% for sale
             'occupied', // 16.7% occupied  
             'under_renovation', // 16.7% under renovation
-            'vacant' // More vacant
         ];
 
         for (const floor of floors) {
             for (let aptNumber = 1; aptNumber <= apartmentsPerFloor; aptNumber++) {
                 const apartmentNumber = `${floor.floorNumber.toString().padStart(2, '0')}${aptNumber.toString().padStart(2, '0')}`;
-                const status = statusOptions[(floor.floorNumber + aptNumber) % statusOptions.length];
+                const baseStatus = baseStatusOptions[(floor.floorNumber + aptNumber) % baseStatusOptions.length];
 
-                // For vacant apartments, decide if for rent, for sale, or both
+                // Determine final status and listing flags
+                let status = baseStatus;
                 let isListedForRent = false;
                 let isListedForSale = false;
 
-                if (status === 'vacant') {
-                    const listingType = (floor.floorNumber + aptNumber) % 3;
-                    if (listingType === 0) {
-                        isListedForRent = true; // 33% for rent only
-                    } else if (listingType === 1) {
-                        isListedForSale = true; // 33% for sale only
-                    } else {
-                        isListedForRent = true; // 33% for both
-                        isListedForSale = true;
-                    }
+                if (baseStatus === 'for_rent') {
+                    status = 'for_rent';
+                    isListedForRent = true;
+                } else if (baseStatus === 'for_sale') {
+                    status = 'for_sale';
+                    isListedForSale = true;
                 }
+                // For occupied and under_renovation, keep as is with no listing flags
 
                 const isOwned = status === 'occupied';
                 const ownerCandidate = residentUsers.length && isOwned

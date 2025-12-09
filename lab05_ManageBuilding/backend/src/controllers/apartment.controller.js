@@ -37,9 +37,16 @@ const searchApartments = async (req, res) => {
         // Base filters
         const whereClause = { isActive: true };
 
+        // CRITICAL: Only show apartments available for rent or sale in marketplace
+        // Exclude occupied and under_renovation apartments
+        if (!status) {
+            whereClause.status = { [Op.in]: ['for_rent', 'for_sale'] };
+        } else {
+            whereClause.status = status;
+        }
+
         if (floorId) whereClause.floorId = parseInt(floorId, 10);
         if (type) whereClause.type = type;
-        if (status) whereClause.status = status;
         if (bedrooms !== undefined) whereClause.bedrooms = parseInt(bedrooms, 10);
         if (bathrooms !== undefined) whereClause.bathrooms = parseInt(bathrooms, 10);
         if (hasParking === 'true') whereClause.parkingSlots = { [Op.gt]: 0 };
@@ -625,6 +632,181 @@ const deleteApartment = async (req, res) => {
     }
 };
 
+/**
+ * Get apartments owned or rented by current user
+ */
+const getMyApartments = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userEmail = req.user.email;
+
+        const apartments = await Apartment.findAll({
+            where: {
+                [Op.or]: [
+                    { ownerId: userId },
+                    { '$householdMembers.email$': userEmail }
+                ],
+                isActive: true
+            },
+            include: [
+                {
+                    model: Floor,
+                    as: 'floor',
+                    attributes: ['id', 'floorNumber', 'buildingId'],
+                    include: [
+                        {
+                            model: Building,
+                            as: 'building',
+                            attributes: ['id', 'name', 'buildingCode']
+                        }
+                    ]
+                },
+                {
+                    model: HouseholdMember,
+                    as: 'householdMembers',
+                    attributes: ['id', 'firstName', 'lastName', 'email', 'relationship'],
+                    required: false
+                }
+            ],
+            order: [['apartmentNumber', 'ASC']]
+        });
+
+        res.status(200).json({
+            success: true,
+            data: apartments
+        });
+    } catch (error) {
+        console.error('Error fetching my apartments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch your apartments',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Update listing status (owner or manager can modify)
+ */
+const updateListing = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { isListedForRent, isListedForSale } = req.body;
+        const userId = req.user.id;
+        const userRole = req.user.role?.name;
+
+        const apartment = await Apartment.findByPk(id);
+
+        if (!apartment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Apartment not found'
+            });
+        }
+
+        // Owner or building manager can update listing
+        const isOwner = apartment.ownerId === userId;
+        const isManager = ['admin', 'building_manager'].includes(userRole);
+
+        if (!isOwner && !isManager) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the owner or building manager can update listing status'
+            });
+        }
+
+        // Only vacant apartments can be listed
+        if (apartment.status !== 'vacant') {
+            return res.status(400).json({
+                success: false,
+                message: 'Only vacant apartments can be listed for rent or sale'
+            });
+        }
+
+        const updates = {};
+        if (isListedForRent !== undefined) updates.isListedForRent = isListedForRent;
+        if (isListedForSale !== undefined) updates.isListedForSale = isListedForSale;
+
+        await apartment.update(updates);
+
+        res.status(200).json({
+            success: true,
+            data: apartment,
+            message: 'Listing status updated successfully'
+        });
+    } catch (error) {
+        console.error('Error updating listing:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update listing status',
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Update apartment status (owner or manager can modify)
+ */
+const updateStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+        const userId = req.user.id;
+        const userRole = req.user.role?.name;
+
+        const apartment = await Apartment.findByPk(id);
+
+        if (!apartment) {
+            return res.status(404).json({
+                success: false,
+                message: 'Apartment not found'
+            });
+        }
+
+        // Owner or building manager can update status
+        const isOwner = apartment.ownerId === userId;
+        const isManager = ['admin', 'building_manager'].includes(userRole);
+
+        if (!isOwner && !isManager) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only the owner or building manager can update apartment status'
+            });
+        }
+
+        // Validate status
+        const validStatuses = ['vacant', 'occupied', 'under_renovation'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid status. Must be: vacant, occupied, or under_renovation'
+            });
+        }
+
+        // If changing to non-vacant, disable listings
+        const updates = { status };
+        if (status !== 'vacant') {
+            updates.isListedForRent = false;
+            updates.isListedForSale = false;
+        }
+
+        await apartment.update(updates);
+
+        res.status(200).json({
+            success: true,
+            data: apartment,
+            message: `Status updated to ${status}${status !== 'vacant' ? ' (listings disabled)' : ''}`
+        });
+    } catch (error) {
+        console.error('Error updating status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update status',
+            error: error.message
+        });
+    }
+};
+
 module.exports = {
     searchApartments,
     getApartmentsByFloor,
@@ -632,5 +814,8 @@ module.exports = {
     createApartment,
     updateApartment,
     deleteApartment,
-    getApartmentsByBuilding
+    getApartmentsByBuilding,
+    getMyApartments,
+    updateListing,
+    updateStatus
 };

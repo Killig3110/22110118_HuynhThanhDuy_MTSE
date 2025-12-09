@@ -51,14 +51,26 @@ api.interceptors.response.use(
     (response) => {
         return response;
     },
-    (error) => {
+    async (error) => {
         console.log('❌ API Error:', {
             method: error.config?.method?.toUpperCase(),
             url: error.config?.url,
             status: error.response?.status,
             message: error.response?.data?.message,
-            data: error.response?.data
+            data: error.response?.data,
+            code: error.code
         });
+
+        // Handle network errors (server down)
+        if (error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK' || !error.response) {
+            console.error('🔴 Server connection failed');
+            // Don't logout, just return a friendly error
+            return Promise.reject({
+                ...error,
+                message: 'Không thể kết nối đến server. Vui lòng kiểm tra lại.',
+                isNetworkError: true
+            });
+        }
 
         // Handle 401 unauthorized errors, but not for login attempts or profile/user operations  
         if (error.response?.status === 401) {

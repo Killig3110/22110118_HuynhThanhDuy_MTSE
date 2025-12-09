@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const path = require('path');
+const { ApolloServer } = require('apollo-server-express');
+const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
 const { sequelize } = require('./config/database');
@@ -17,6 +19,10 @@ const cartRoutes = require('./routes/cart.routes');
 const { errorHandler } = require('./middleware/errorHandler');
 const { generalLimiter } = require('./middleware/rateLimiter');
 const { sanitizeInput } = require('./middleware/validation');
+
+// GraphQL imports
+const cartTypeDefs = require('./graphql/cart.schema');
+const cartResolvers = require('./graphql/cart.resolvers');
 
 const app = express();
 
@@ -172,22 +178,43 @@ app.get('/api', (req, res) => {
     });
 });
 
-// Error handling middleware
-app.use(errorHandler);
-
-// 404 handler
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        message: 'API endpoint not found',
-        path: req.path,
-        method: req.method
-    });
-});
-
 const PORT = process.env.PORT || 5000;
 
 let server;
+
+// GraphQL Apollo Server setup
+const apolloServer = new ApolloServer({
+    typeDefs: cartTypeDefs,
+    resolvers: cartResolvers,
+    context: async ({ req }) => {
+        // Extract user from JWT token
+        const token = req.headers.authorization?.replace('Bearer ', '') || req.cookies?.token;
+
+        if (token) {
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                const { User, Role } = require('./models');
+                const user = await User.findByPk(decoded.id, {
+                    include: [{ model: Role, as: 'role' }]
+                });
+                return { user };
+            } catch (error) {
+                console.log('GraphQL auth error:', error.message);
+                return { user: null };
+            }
+        }
+
+        return { user: null };
+    },
+    formatError: (error) => {
+        console.error('GraphQL Error:', error);
+        return {
+            message: error.message,
+            locations: error.locations,
+            path: error.path
+        };
+    }
+});
 
 // Database connection and server start
 sequelize.authenticate()
@@ -197,13 +224,38 @@ sequelize.authenticate()
         // Sync models
         return sequelize.sync({ force: false });
     })
-    .then(() => {
+    .then(async () => {
         console.log('✅ Database models synchronized');
+
+        // Start Apollo Server
+        await apolloServer.start();
+        apolloServer.applyMiddleware({
+            app,
+            path: '/graphql',
+            cors: {
+                origin: process.env.CLIENT_URL || 'http://localhost:3000',
+                credentials: true
+            }
+        });
+
+        // Error handling middleware (AFTER GraphQL)
+        app.use(errorHandler);
+
+        // 404 handler (MUST be LAST)
+        app.use((req, res) => {
+            res.status(404).json({
+                success: false,
+                message: 'API endpoint not found',
+                path: req.path,
+                method: req.method
+            });
+        });
 
         server = app.listen(PORT, () => {
             console.log(`🚀 Server running on port ${PORT}`);
             console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
             console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
+            console.log(`🎮 GraphQL Playground: http://localhost:${PORT}${apolloServer.graphqlPath}`);
         });
     })
     .catch((error) => {

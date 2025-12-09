@@ -7,7 +7,10 @@ const {
     createApartment,
     updateApartment,
     deleteApartment,
-    getApartmentsByBuilding
+    getApartmentsByBuilding,
+    getMyApartments,
+    updateListing,
+    updateStatus
 } = require('../controllers/apartment.controller');
 const {
     authMiddleware,
@@ -68,7 +71,7 @@ const validateApartment = [
 const validateSearchFilters = [
     query('q').optional().trim().isLength({ max: 100 }).withMessage('Search term is too long'),
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be >= 1'),
-    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+    query('limit').optional().isInt({ min: 1, max: 500 }).withMessage('Limit must be between 1 and 500'),
     query('buildingId').optional().isInt().withMessage('Building ID must be a number'),
     query('blockId').optional().isInt().withMessage('Block ID must be a number'),
     query('floorId').optional().isInt().withMessage('Floor ID must be a number'),
@@ -105,9 +108,20 @@ router.get('/search',
 );
 
 /**
+ * @route   GET /api/apartments/my-apartments
+ * @desc    Get apartments owned or rented by current user
+ * @access  Protected
+ */
+router.get('/my-apartments',
+    generalLimiter,
+    authMiddleware,
+    getMyApartments
+);
+
+/**
  * @route   GET /api/apartments/:id
  * @desc    Get apartment by ID
- * @access  Protected
+ * @access  Public (optional auth)
  */
 router.get('/:id',
     generalLimiter,
@@ -151,6 +165,37 @@ router.delete('/:id',
     authMiddleware,
     requireRole(['admin']),
     deleteApartment
+);
+
+/**
+ * @route   PATCH /api/apartments/:id/listing
+ * @desc    Update listing status (owner only)
+ * @access  Protected - Owner
+ */
+router.patch('/:id/listing',
+    generalLimiter,
+    authMiddleware,
+    [
+        body('isListedForRent').optional().isBoolean(),
+        body('isListedForSale').optional().isBoolean(),
+        handleValidationErrors
+    ],
+    updateListing
+);
+
+/**
+ * @route   PATCH /api/apartments/:id/status
+ * @desc    Update apartment status (owner only)
+ * @access  Protected - Owner
+ */
+router.patch('/:id/status',
+    generalLimiter,
+    authMiddleware,
+    [
+        body('status').isIn(['vacant', 'occupied', 'under_renovation']),
+        handleValidationErrors
+    ],
+    updateStatus
 );
 
 module.exports = router;

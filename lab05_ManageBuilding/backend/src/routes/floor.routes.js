@@ -43,7 +43,7 @@ const validateFloor = [
 /**
  * @route   GET /api/floors/:id
  * @desc    Get floor by ID
- * @access  Protected
+ * @access  Public (optional auth)
  */
 router.get('/:id',
     generalLimiter,

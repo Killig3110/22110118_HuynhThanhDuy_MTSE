@@ -61,18 +61,22 @@ const createLeaseRequest = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Apartment not found' });
         }
 
-        // Basic availability check
-        if (apartment.status === 'occupied') {
-            return res.status(400).json({ success: false, message: 'Apartment already occupied' });
+        // Basic availability check - apartment must be available for_rent or for_sale
+        if (!['for_rent', 'for_sale'].includes(apartment.status)) {
+            return res.status(400).json({
+                success: false,
+                message: `Apartment is not available (current status: ${apartment.status})`
+            });
         }
+
         if (type === 'rent') {
-            if (!apartment.isListedForRent) {
-                return res.status(400).json({ success: false, message: 'Apartment is not listed for rent' });
+            if (apartment.status !== 'for_rent' || !apartment.isListedForRent) {
+                return res.status(400).json({ success: false, message: 'Apartment is not available for rent' });
             }
         }
         if (type === 'buy') {
-            if (!apartment.isListedForSale) {
-                return res.status(400).json({ success: false, message: 'Apartment is not listed for sale' });
+            if (apartment.status !== 'for_sale' || !apartment.isListedForSale) {
+                return res.status(400).json({ success: false, message: 'Apartment is not available for sale' });
             }
         }
 
@@ -203,7 +207,7 @@ const listLeaseRequests = async (req, res) => {
 
 // Approve / reject (with database transaction for data consistency)
 const decideLeaseRequest = async (req, res) => {
-    const { sequelize } = require('../models');
+    const { sequelize } = require('../config/database');
     const transaction = await sequelize.transaction();
 
     try {
@@ -277,7 +281,7 @@ const decideLeaseRequest = async (req, res) => {
                     email: lease.contactEmail,
                     phone: lease.contactPhone || null,
                     // generate a simple temp password; should be reset flow in real apps
-                    password: 'Temp123!',
+                    password: process.env.DEFAULT_GUEST_PASSWORD || 'ChangeMe123!',
                     roleId: residentRole?.id || null,
                     isActive: true
                 }, { transaction });
@@ -318,19 +322,15 @@ const decideLeaseRequest = async (req, res) => {
             }
         }
 
-        // Update apartment status
+        // Reserve apartment by removing from listings (but keep status as for_rent/for_sale)
+        // Status will be updated to 'occupied' after successful checkout in cart service
         if (lease.type === 'rent') {
             await lease.apartment.update({
-                tenantId: requesterId,
-                status: 'occupied',
-                isListedForRent: false
+                isListedForRent: false  // Remove from marketplace but keep status='for_rent'
             }, { transaction });
         } else if (lease.type === 'buy') {
             await lease.apartment.update({
-                ownerId: requesterId,
-                tenantId: null,
-                status: 'occupied',
-                isListedForSale: false,
+                isListedForSale: false,  // Remove from marketplace but keep status='for_sale'
                 isListedForRent: false
             }, { transaction });
         }
@@ -340,12 +340,50 @@ const decideLeaseRequest = async (req, res) => {
             await lease.update({ userId: requesterId }, { transaction });
         }
 
+        // 🆕 AUTO-CREATE CART ITEM for approved lease request
+        const { Cart } = require('../models');
+
+        // Calculate months from startDate and endDate for rent
+        let months = 12; // default
+        if (lease.type === 'rent' && lease.startDate && lease.endDate) {
+            const start = new Date(lease.startDate);
+            const end = new Date(lease.endDate);
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            months = Math.ceil(diffDays / 30); // approximate months
+        }
+
+        // Create cart item for the approved lease
+        await Cart.create({
+            userId: requesterId,
+            apartmentId: lease.apartmentId,
+            mode: lease.type || 'rent', // 'rent' or 'buy'
+            months: lease.type === 'rent' ? months : null,
+            selected: true, // default selected for checkout
+            priceSnapshot: lease.monthlyRent || lease.totalPrice || lease.apartment.monthlyRent || lease.apartment.salePrice,
+            depositSnapshot: lease.apartment.depositAmount || 0,
+            maintenanceFeeSnapshot: lease.apartment.maintenanceFee || 0,
+            note: `Auto-added from approved lease request #${lease.id}`,
+            addedAt: new Date()
+        }, { transaction });
+
+        console.log('🛒 CART ITEM AUTO-CREATED:', {
+            userId: requesterId,
+            apartmentId: lease.apartmentId,
+            apartmentNumber: lease.apartment?.apartmentNumber,
+            mode: lease.type,
+            months: lease.type === 'rent' ? months : null,
+            leaseRequestId: lease.id,
+            timestamp: new Date().toISOString()
+        });
+
         await transaction.commit();
 
         res.status(200).json({
             success: true,
-            message: 'Request approved',
-            data: lease
+            message: 'Request approved and added to cart. Please proceed to checkout.',
+            data: lease,
+            cartCreated: true
         });
     } catch (error) {
         await transaction.rollback();

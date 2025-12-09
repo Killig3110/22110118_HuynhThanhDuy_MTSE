@@ -9,7 +9,7 @@ const Payment = sequelize.define('Payment', {
     },
     billingId: {
         type: DataTypes.INTEGER,
-        allowNull: false,
+        allowNull: true,  // Allow null for direct payments (e.g., from checkout)
         references: {
             model: 'billings',
             key: 'id'
@@ -24,7 +24,7 @@ const Payment = sequelize.define('Payment', {
         }
     },
     amount: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: false,
         validate: {
             min: 0

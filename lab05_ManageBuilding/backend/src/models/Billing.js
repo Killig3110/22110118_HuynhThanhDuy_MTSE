@@ -24,7 +24,7 @@ const Billing = sequelize.define('Billing', {
         allowNull: false
     },
     amount: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: false,
         validate: {
             min: 0
@@ -44,14 +44,14 @@ const Billing = sequelize.define('Billing', {
         defaultValue: 'pending'
     },
     lateFee: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         defaultValue: 0,
         validate: {
             min: 0
         }
     },
     totalAmount: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: false,
         validate: {
             min: 0

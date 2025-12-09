@@ -78,7 +78,7 @@ const CartItemCard = ({
                 <Button variant="secondary" size="sm" onClick={() => handleChange(1)}>+</Button>
               </>
             )}
-            <Button variant="danger" size="sm" onClick={onRemove}>Remove</Button>
+            {onRemove && <Button variant="danger" size="sm" onClick={onRemove}>Remove</Button>}
           </div>
         </div>
       }
@@ -99,59 +99,83 @@ const CartItemCard = ({
 
       {/* Location Hierarchy */}
       {(block || building || floor) && (
-        <div style={{ fontSize: 12, color: '#6b7280', marginBottom: 8 }}>
-          📍 {[block, building, floor].filter(Boolean).join(' › ')}
+        <div style={{ fontSize: 13, color: '#6b7280', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span>📍</span>
+          <span>{[block, building, floor].filter(Boolean).join(' › ')}</span>
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 12, fontSize: 13, color: '#4b5563', alignItems: 'center' }}>
+      {/* Image and basic info */}
+      <div style={{ display: 'flex', gap: 16, marginBottom: 12, alignItems: 'flex-start' }}>
         {selectable && (
-          <input type="checkbox" checked={selected} onChange={onSelectToggle} />
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={onSelectToggle}
+            style={{ marginTop: 4, width: 18, height: 18, cursor: 'pointer' }}
+          />
         )}
         {image && (
-          <img src={image} alt={title} style={{ width: 64, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid #e5e7eb' }} />
+          <img
+            src={image}
+            alt={title}
+            style={{
+              width: 180,
+              height: 135,
+              objectFit: 'cover',
+              borderRadius: 8,
+              border: '1px solid #e5e7eb',
+              flexShrink: 0
+            }}
+          />
         )}
-        <span>{type?.toUpperCase()}</span>
-        <span>• {area} m²</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, color: '#4b5563', marginBottom: 8 }}>
+            <span style={{ fontWeight: 600 }}>{type?.toUpperCase()}</span>
+            <span style={{ margin: '0 8px' }}>•</span>
+            <span>{area} m²</span>
+          </div>
+        </div>
       </div>
 
       {/* Apartment Details */}
       {(bedrooms || bathrooms || balconies || parkingSlots) && (
-        <div style={{ display: 'flex', gap: 16, fontSize: 12, color: '#6b7280', marginTop: 8, flexWrap: 'wrap' }}>
-          {bedrooms && <span>🛏️ {bedrooms} BR</span>}
-          {bathrooms && <span>🚿 {bathrooms} BA</span>}
-          {balconies > 0 && <span>🌅 {balconies} Balcony</span>}
-          {parkingSlots > 0 && <span>🚗 {parkingSlots} Parking</span>}
+        <div style={{ display: 'flex', gap: 20, fontSize: 13, color: '#4b5563', marginTop: 12, marginBottom: 8, flexWrap: 'wrap' }}>
+          {bedrooms && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span>🛏️</span><span>{bedrooms} Bedrooms</span></span>}
+          {bathrooms && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span>🚿</span><span>{bathrooms} Bathrooms</span></span>}
+          {balconies > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span>🌅</span><span>{balconies} Balcony</span></span>}
+          {parkingSlots > 0 && <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span>🚗</span><span>{parkingSlots} Parking</span></span>}
         </div>
       )}
 
       {/* Amenities */}
       {amenities.length > 0 && (
-        <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-          {amenities.slice(0, 5).map((amenity, idx) => (
+        <div style={{ display: 'flex', gap: 8, marginTop: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+          {amenities.slice(0, 6).map((amenity, idx) => (
             <span key={idx} style={{
-              padding: '2px 8px',
+              padding: '4px 12px',
               background: '#f3f4f6',
-              color: '#6b7280',
-              fontSize: 11,
-              borderRadius: 4,
-              border: '1px solid #e5e7eb'
+              color: '#4b5563',
+              fontSize: 12,
+              borderRadius: 6,
+              border: '1px solid #e5e7eb',
+              fontWeight: 500
             }}>
               {amenity}
             </span>
           ))}
-          {amenities.length > 5 && (
-            <span style={{ fontSize: 11, color: '#9ca3af' }}>+{amenities.length - 5} more</span>
+          {amenities.length > 6 && (
+            <span style={{ fontSize: 12, color: '#9ca3af', padding: '4px 8px' }}>+{amenities.length - 6} more</span>
           )}
         </div>
       )}
 
       {/* Financial Breakdown */}
       {(maintenanceFee > 0 || deposit > 0) && (
-        <div style={{ marginTop: 12, padding: 8, background: '#f9fafb', borderRadius: 6, fontSize: 12 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+        <div style={{ marginTop: 14, padding: 12, background: '#f9fafb', borderRadius: 8, fontSize: 13, border: '1px solid #f3f4f6' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
             <span style={{ color: '#6b7280' }}>{mode === 'rent' ? 'Monthly rent' : 'Sale price'}:</span>
-            <span style={{ fontWeight: 600 }}>{formatPrice(price)} đ{mode === 'rent' ? '/mo' : ''}</span>
+            <span style={{ fontWeight: 600, color: '#111827' }}>{formatPrice(price)} đ{mode === 'rent' ? '/mo' : ''}</span>
           </div>
           {mode === 'rent' && months > 1 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>

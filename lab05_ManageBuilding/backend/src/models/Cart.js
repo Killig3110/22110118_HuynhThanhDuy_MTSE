@@ -47,17 +47,17 @@ const Cart = sequelize.define('Cart', {
         comment: 'Whether this item is selected for checkout'
     },
     priceSnapshot: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: true,
         comment: 'Price at the time of adding to cart (for reference)'
     },
     depositSnapshot: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: true,
         comment: 'Deposit amount at the time of adding to cart'
     },
     maintenanceFeeSnapshot: {
-        type: DataTypes.DECIMAL(10, 2),
+        type: DataTypes.DECIMAL(15, 2),
         allowNull: true,
         comment: 'Maintenance fee at the time of adding to cart'
     },

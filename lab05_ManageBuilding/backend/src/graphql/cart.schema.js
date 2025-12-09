@@ -90,6 +90,28 @@ const cartTypeDefs = gql`
     cartSummary: CartSummary!
   }
 
+  input CheckoutInput {
+    paymentMethod: String!
+    note: String
+  }
+
+  type Payment {
+    id: ID!
+    transactionId: String!
+    amount: Float!
+    status: String!
+    paymentMethod: String!
+    paymentDate: String!
+  }
+
+  type CheckoutResult {
+    success: Boolean!
+    message: String!
+    payments: [Payment!]!
+    apartments: [Apartment!]!
+    userRole: String!
+  }
+
   type Mutation {
     addToCart(input: AddToCartInput!): CartItem!
     updateCartItem(id: ID!, input: UpdateCartItemInput!): CartItem!
@@ -97,6 +119,7 @@ const cartTypeDefs = gql`
     toggleCartItemSelection(id: ID!, selected: Boolean!): CartItem!
     selectAllCartItems(selected: Boolean!): [CartItem!]!
     clearCart: Boolean!
+    checkoutCart(input: CheckoutInput!): CheckoutResult!
   }
 `;
 
