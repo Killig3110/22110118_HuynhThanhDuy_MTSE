@@ -184,18 +184,14 @@ function App() {
                                 }
                             />
 
-                            {/* Building Management Routes */}
+                            {/* Building Management Routes - Public Access for Guest Viewing */}
                             <Route
                                 path="/buildings"
-                                element={
-                                    <BuildingList />
-                                }
+                                element={<BuildingList />}
                             />
                             <Route
                                 path="/buildings/map"
-                                element={
-                                    <InteractiveBuildingMap />
-                                }
+                                element={<InteractiveBuildingMap />}
                             />
                             <Route
                                 path="/search"
@@ -213,11 +209,10 @@ function App() {
                                     </ProtectedRoute>
                                 }
                             />
+                            {/* Marketplace - Public Access */}
                             <Route
                                 path="/marketplace"
-                                element={
-                                    <Marketplace />
-                                }
+                                element={<Marketplace />}
                             />
                             <Route
                                 path="/cart"

@@ -99,14 +99,35 @@ app.use('/api/search', searchRoutes);
 app.use('/api/leases', leaseRoutes);
 app.use('/api/cart', cartRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-    res.json({
+// Health check with database connection test
+app.get('/api/health', async (req, res) => {
+    const health = {
         status: 'OK',
         message: 'Building Management System API is running',
         timestamp: new Date().toISOString(),
-        version: '1.0.0'
-    });
+        version: '1.0.0',
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+    };
+
+    // Test database connection
+    try {
+        await sequelize.authenticate();
+        health.database = {
+            status: 'connected',
+            type: 'MySQL',
+            host: sequelize.config.host
+        };
+    } catch (error) {
+        health.status = 'DEGRADED';
+        health.database = {
+            status: 'disconnected',
+            error: error.message
+        };
+        return res.status(503).json(health);
+    }
+
+    res.json(health);
 });
 
 // API Documentation endpoint
@@ -166,24 +187,71 @@ app.use((req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
+let server;
+
 // Database connection and server start
 sequelize.authenticate()
     .then(() => {
-        console.log('Database connected successfully');
+        console.log('✅ Database connected successfully');
 
         // Sync models
         return sequelize.sync({ force: false });
     })
     .then(() => {
-        console.log('Database models synchronized');
+        console.log('✅ Database models synchronized');
 
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+        server = app.listen(PORT, () => {
+            console.log(`🚀 Server running on port ${PORT}`);
+            console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+            console.log(`🏥 Health check: http://localhost:${PORT}/api/health`);
         });
     })
     .catch((error) => {
-        console.error('Unable to start server:', error);
+        console.error('❌ Unable to start server:', error);
         process.exit(1);
     });
+
+// Graceful shutdown handler
+const gracefulShutdown = async (signal) => {
+    console.log(`\n⚠️  ${signal} signal received: closing HTTP server`);
+    
+    if (server) {
+        server.close(async () => {
+            console.log('🔒 HTTP server closed');
+            
+            try {
+                await sequelize.close();
+                console.log('🔒 Database connection closed');
+                console.log('✅ Graceful shutdown completed');
+                process.exit(0);
+            } catch (error) {
+                console.error('❌ Error during shutdown:', error);
+                process.exit(1);
+            }
+        });
+
+        // Force close after 10 seconds
+        setTimeout(() => {
+            console.error('⏰ Forced shutdown after timeout');
+            process.exit(1);
+        }, 10000);
+    }
+};
+
+// Listen for termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown('UNHANDLED_REJECTION');
+});
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    console.error('❌ Uncaught Exception:', error);
+    gracefulShutdown('UNCAUGHT_EXCEPTION');
+});
 
 module.exports = app;

@@ -19,12 +19,30 @@ const createLeaseRequest = async (req, res) => {
             contactPhone
         } = req.body;
 
-        if (userRole && userRole !== 'resident') {
-            return res.status(403).json({ success: false, message: 'Only residents can request rent/buy' });
+        // Block staff roles from creating lease requests
+        const staffRoles = ['admin', 'building_manager', 'security', 'technician', 'accountant'];
+        if (userRole && staffRoles.includes(userRole)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Staff members cannot create lease requests. Only residents or guests can request to rent/buy apartments.'
+            });
         }
+
+        // Allow only residents (logged in) or guests (not logged in with contact info)
+        if (userRole && userRole !== 'resident') {
+            return res.status(403).json({
+                success: false,
+                message: 'Only residents can request rent/buy. Please contact an administrator if you need assistance.'
+            });
+        }
+
+        // For guests (userId is null), require contact information
         if (!userId) {
             if (!contactName || !contactEmail || !contactPhone) {
-                return res.status(400).json({ success: false, message: 'Contact info is required for guest requests' });
+                return res.status(400).json({
+                    success: false,
+                    message: 'Contact information (name, email, phone) is required for guest requests'
+                });
             }
         }
 
@@ -163,23 +181,32 @@ const listLeaseRequests = async (req, res) => {
     }
 };
 
-// Approve / reject
+// Approve / reject (with database transaction for data consistency)
 const decideLeaseRequest = async (req, res) => {
+    const { sequelize } = require('../models');
+    const transaction = await sequelize.transaction();
+    
     try {
         const { id } = req.params;
         const { decision } = req.body; // 'approve' | 'reject'
 
         if (!['approve', 'reject'].includes(decision)) {
+            await transaction.rollback();
             return res.status(400).json({ success: false, message: 'Invalid decision' });
         }
 
         const lease = await LeaseRequest.findByPk(id, {
-            include: [{ model: Apartment, as: 'apartment' }]
+            include: [{ model: Apartment, as: 'apartment' }],
+            transaction
         });
+        
         if (!lease) {
+            await transaction.rollback();
             return res.status(404).json({ success: false, message: 'Lease request not found' });
         }
+        
         if (lease.status !== 'pending_manager') {
+            await transaction.rollback();
             return res.status(400).json({ success: false, message: 'Request is not ready for manager decision' });
         }
 
@@ -188,16 +215,18 @@ const decideLeaseRequest = async (req, res) => {
                 status: 'rejected',
                 decisionBy: req.user.id,
                 decisionAt: new Date()
-            });
+            }, { transaction });
+            
+            await transaction.commit();
             return res.status(200).json({ success: true, message: 'Request rejected', data: lease });
         }
 
-        // Approve path
+        // Approve path - All operations in transaction
         await lease.update({
             status: 'approved',
             decisionBy: req.user.id,
             decisionAt: new Date()
-        });
+        }, { transaction });
 
         // Update apartment assignment and listing flags
         // Ensure requester exists (guest request may have null userId)
@@ -205,13 +234,23 @@ const decideLeaseRequest = async (req, res) => {
         if (!requesterId) {
             // Try to find existing user by contact email; otherwise create resident account
             if (!lease.contactEmail) {
+                await transaction.rollback();
                 return res.status(400).json({ success: false, message: 'Missing requester info to approve' });
             }
-            const existing = await User.findOne({ where: { email: lease.contactEmail } });
+            const existing = await User.findOne({ 
+                where: { email: lease.contactEmail },
+                transaction 
+            });
+            
             if (existing) {
                 requesterId = existing.id;
             } else {
                 const [firstName = '', lastName = ''] = (lease.contactName || 'Guest User').split(' ');
+                const residentRole = await Role.findOne({ 
+                    where: { name: 'resident' },
+                    transaction 
+                });
+                
                 const newUser = await User.create({
                     firstName: firstName || 'Guest',
                     lastName: lastName || 'User',
@@ -219,30 +258,40 @@ const decideLeaseRequest = async (req, res) => {
                     phone: lease.contactPhone || null,
                     // generate a simple temp password; should be reset flow in real apps
                     password: 'Temp123!',
-                    roleId: (await Role.findOne({ where: { name: 'resident' } }))?.id || null,
+                    roleId: residentRole?.id || null,
                     isActive: true
-                });
+                }, { transaction });
+                
                 requesterId = newUser.id;
             }
         }
 
         // Upgrade role to resident if needed
         if (requesterId) {
-            const requester = await User.findByPk(requesterId, { include: [{ model: Role, as: 'role' }] });
+            const requester = await User.findByPk(requesterId, { 
+                include: [{ model: Role, as: 'role' }],
+                transaction 
+            });
+            
             if (requester && requester.role?.name !== 'resident') {
-                const residentRole = await Role.findOne({ where: { name: 'resident' } });
+                const residentRole = await Role.findOne({ 
+                    where: { name: 'resident' },
+                    transaction 
+                });
+                
                 if (residentRole) {
-                    await requester.update({ roleId: residentRole.id });
+                    await requester.update({ roleId: residentRole.id }, { transaction });
                 }
             }
         }
 
+        // Update apartment status
         if (lease.type === 'rent') {
             await lease.apartment.update({
                 tenantId: requesterId,
                 status: 'occupied',
                 isListedForRent: false
-            });
+            }, { transaction });
         } else if (lease.type === 'buy') {
             await lease.apartment.update({
                 ownerId: requesterId,
@@ -250,8 +299,15 @@ const decideLeaseRequest = async (req, res) => {
                 status: 'occupied',
                 isListedForSale: false,
                 isListedForRent: false
-            });
+            }, { transaction });
         }
+
+        // Update lease with final userId
+        if (requesterId !== lease.userId) {
+            await lease.update({ userId: requesterId }, { transaction });
+        }
+
+        await transaction.commit();
 
         res.status(200).json({
             success: true,
@@ -259,6 +315,7 @@ const decideLeaseRequest = async (req, res) => {
             data: lease
         });
     } catch (error) {
+        await transaction.rollback();
         console.error('Error deciding lease request:', error);
         res.status(500).json({
             success: false,
