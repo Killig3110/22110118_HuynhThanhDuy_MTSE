@@ -16,6 +16,7 @@
         "autoprefixer": "^10.4.22",
         "axios": "^1.6.0",
         "js-cookie": "^3.0.5",
+        "lab07_cartcomponent": "^1.0.0",
         "lucide-react": "^0.292.0",
         "postcss": "^8.5.6",
         "react": "^18.2.0",
