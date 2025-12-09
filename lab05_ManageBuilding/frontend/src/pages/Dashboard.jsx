@@ -176,25 +176,74 @@ const Dashboard = () => {
                 <div className="px-4 sm:px-0 mb-8">
                     <h3 className="text-lg leading-6 font-medium text-gray-900 mb-4">Quick Actions</h3>
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        <Link
-                            to="/buildings"
-                            className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
-                        >
-                            <div>
-                                <span className="rounded-lg inline-flex p-3 bg-blue-50 text-blue-600 ring-4 ring-white">
-                                    <Building2 className="h-6 w-6" aria-hidden="true" />
-                                </span>
-                            </div>
-                            <div className="mt-4">
-                                <h3 className="text-lg font-medium text-gray-900">
-                                    <span className="absolute inset-0" aria-hidden="true" />
-                                    View Buildings
-                                </h3>
-                                <p className="mt-2 text-sm text-gray-500">
-                                    Browse all buildings and apartment information.
-                                </p>
-                            </div>
-                        </Link>
+                        {/* Buildings - Staff Only */}
+                        {['admin', 'building_manager', 'security', 'technician', 'accountant'].includes(role) && (
+                            <Link
+                                to="/buildings"
+                                className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
+                            >
+                                <div>
+                                    <span className="rounded-lg inline-flex p-3 bg-blue-50 text-blue-600 ring-4 ring-white">
+                                        <Building2 className="h-6 w-6" aria-hidden="true" />
+                                    </span>
+                                </div>
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-medium text-gray-900">
+                                        <span className="absolute inset-0" aria-hidden="true" />
+                                        View Buildings
+                                    </h3>
+                                    <p className="mt-2 text-gray-500 text-sm">
+                                        Browse all buildings and apartment information.
+                                    </p>
+                                </div>
+                            </Link>
+                        )}
+
+                        {/* Marketplace - For Residents */}
+                        {role === 'resident' && (
+                            <Link
+                                to="/marketplace"
+                                className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
+                            >
+                                <div>
+                                    <span className="rounded-lg inline-flex p-3 bg-emerald-50 text-emerald-600 ring-4 ring-white">
+                                        <ShoppingBag className="h-6 w-6" aria-hidden="true" />
+                                    </span>
+                                </div>
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-medium text-gray-900">
+                                        <span className="absolute inset-0" aria-hidden="true" />
+                                        Marketplace
+                                    </h3>
+                                    <p className="mt-2 text-sm text-gray-500">
+                                        Browse apartments for rent or sale.
+                                    </p>
+                                </div>
+                            </Link>
+                        )}
+
+                        {/* My Cart - For Residents */}
+                        {role === 'resident' && (
+                            <Link
+                                to="/cart"
+                                className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-blue-500 rounded-lg shadow hover:shadow-md transition-shadow"
+                            >
+                                <div>
+                                    <span className="rounded-lg inline-flex p-3 bg-blue-50 text-blue-600 ring-4 ring-white">
+                                        <ShoppingCart className="h-6 w-6" aria-hidden="true" />
+                                    </span>
+                                </div>
+                                <div className="mt-4">
+                                    <h3 className="text-lg font-medium text-gray-900">
+                                        <span className="absolute inset-0" aria-hidden="true" />
+                                        My Cart
+                                    </h3>
+                                    <p className="mt-2 text-sm text-gray-500">
+                                        View and manage your cart items.
+                                    </p>
+                                </div>
+                            </Link>
+                        )}
 
                         {user?.role?.name === 'admin' || user?.role?.name === 'building_manager' ? (
                             <Link

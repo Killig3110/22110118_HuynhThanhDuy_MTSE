@@ -187,15 +187,21 @@ function App() {
                                     }
                                 />
 
-                                {/* Building Management Routes - Public Access for Guest Viewing */}
+                                {/* Building Management Routes - Staff Only */}
                                 <Route
                                     path="/buildings"
-                                    element={<BuildingList />}
+                                    element={
+                                        <ProtectedRoute>
+                                            <BuildingList />
+                                        </ProtectedRoute>
+                                    }
                                 />
+                                {/* Building Map - Public Access */}
                                 <Route
                                     path="/buildings/map"
                                     element={<InteractiveBuildingMap />}
                                 />
+                                {/* Search - Protected for Admin/Manager/Resident */}
                                 <Route
                                     path="/search"
                                     element={

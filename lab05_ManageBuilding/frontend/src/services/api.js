@@ -157,6 +157,7 @@ export const floorAPI = {
 
 export const apartmentAPI = {
     listByFloor: (floorId, params) => api.get(`/buildings/floors/${floorId}/apartments`, { params }),
+    getById: (id) => api.get(`/apartments/${id}`),
     create: (payload) => api.post('/apartments', payload),
     update: (id, payload) => api.put(`/apartments/${id}`, payload),
     remove: (id) => api.delete(`/apartments/${id}`),

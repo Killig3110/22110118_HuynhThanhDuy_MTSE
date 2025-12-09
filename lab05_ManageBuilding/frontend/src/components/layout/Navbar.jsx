@@ -20,10 +20,10 @@ const Navbar = () => {
 
         // Authenticated users
         links.push({ to: '/dashboard', label: 'Dashboard', icon: Home, show: true });
-        links.push({ to: '/buildings', label: 'Buildings', icon: Building2, show: role !== 'guest' });
+        links.push({ to: '/buildings', label: 'Buildings', icon: Building2, show: ['admin', 'building_manager', 'security', 'technician', 'accountant'].includes(role) });
         links.push({ to: '/buildings/map', label: 'Interactive Map', icon: MapPin, show: true });
         links.push({ to: '/marketplace', label: 'Marketplace', icon: ShoppingBag, show: true });
-        links.push({ to: '/search', label: 'Search', icon: Search, show: true });
+        links.push({ to: '/search', label: 'Search', icon: Search, show: ['admin', 'building_manager', 'resident'].includes(role) });
 
         if (role === 'resident') {
             links.push({ to: '/my-requests', label: 'My Requests', icon: ClipboardList, show: true });
@@ -99,8 +99,8 @@ const Navbar = () => {
 
                     {/* Right side - User menu */}
                     <div className="flex items-center space-x-4">
-                        {/* Cart Icon with Badge */}
-                        {user && (
+                        {/* Cart Icon with Badge - Only for users (not staff roles) */}
+                        {user && !['admin', 'building_manager', 'security', 'technician', 'accountant'].includes(role) && (
                             <Link
                                 to="/cart"
                                 className="relative p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
