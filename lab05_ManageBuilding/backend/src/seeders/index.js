@@ -576,9 +576,13 @@ async function seedDatabase() {
         console.log(`- ${blocks.length} blocks created (A/B/S)`);
         console.log(`- ${buildings.length} buildings created`);
         console.log(`- ${floors.length} floors created`);
-        console.log(`- ${apartments.length} apartments created`);
+        console.log(`- ${apartments.length} apartments created (with diverse images)`);
         console.log(`- ${Math.min(occupiedAndRent.length, 80)} household members created`);
         console.log(`- ${facilities.length} facilities created`);
+        console.log('\n🆕 Engagement Features Ready:');
+        console.log('- ApartmentFavorites, ApartmentViews, ApartmentReviews tables available');
+        console.log('- All apartments have 3-5 unique images from Unsplash');
+        console.log('- 50% apartments for_rent, 17% for_sale, ready for favorites & reviews');
 
         console.log('\n🔐 Test Accounts:');
         console.log('Admin:             admin@building.com          / 123456');
