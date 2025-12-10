@@ -400,8 +400,9 @@ graph TD
     
     style K fill:#ff6b6b
     style S fill:#ff6b6b
-    note right of K: Most complex operation<br/>Handles payments,<br/>role upgrades,<br/>status updates
 ```
+
+**Note**: `checkoutCart` là operation phức tạp nhất, xử lý payments, role upgrades, và apartment status updates.
 
 ---
 
